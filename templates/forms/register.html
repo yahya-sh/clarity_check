@@ -1,0 +1,39 @@
+<form method="POST" action="/register" novalidate>
+    {{ form.csrf_token }}
+    
+    <div class="form-group">
+        {{ form.username.label(class="form-label") }}
+        {% if form.username.errors %}
+            {{ form.username(size=20, class="form-control is-invalid", placeholder="Enter your username here...") }}
+        {% else %}
+            {{ form.username(size=20, class="form-control", placeholder="Enter your username here...") }}
+        {% endif %}
+        {% if form.username.errors %}
+        <div class="error-messages">
+            {% for error in form.username.errors %}
+            <div class="error-message">{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="form-group">
+        {{ form.password.label(class="form-label") }}
+        {% if form.password.errors %}
+            {{ form.password(size=20, class="form-control is-invalid", placeholder="Enter your password here...") }}
+        {% else %}
+            {{ form.password(size=20, class="form-control", placeholder="Enter your password here...") }}
+        {% endif %}
+        {% if form.password.errors %}
+        <div class="error-messages">
+            {% for error in form.password.errors %}
+            <div class="error-message">{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="form-group">
+        <input type="submit" value="Register" class="btn btn-primary">
+    </div>
+</form>
