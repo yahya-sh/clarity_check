@@ -14,3 +14,8 @@ class RegisterForm(FlaskForm):
         validators.Length(min=6, max=100, message='Password must be between 6 and 100 characters'),
         # validators.Regexp(r'^(?=.*[a-zA-Z])(?=.*\d)', message='Password must contain at least one letter and one number')
     ])
+    def to_model(self) -> User:
+        return User(
+            username=self.username.data,
+            password=self.password.data
+        )
