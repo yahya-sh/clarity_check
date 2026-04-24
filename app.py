@@ -1,6 +1,8 @@
 from flask_wtf.csrf import CSRFProtect
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, flash
+from forms.register import RegisterForm
 import os
+from repositories import users as users_repo
 
 app = Flask(__name__)
 csrf = CSRFProtect(app)
@@ -9,6 +11,24 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'insecure-bc054a63d0f9c2
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegisterForm()
+    if form.validate_on_submit():
+        user = form.to_model()
+        
+        # Save user using repository (handles duplicate check internally)
+        saved_user = users_repo.create_user(user)
+        
+        if saved_user:
+            flash('Registration successful! You can now log in.', 'success')
+            return redirect('/')
+        else:
+            flash('Username is already taken. Please choose another one.', 'error')
+            return render_template('register.html', form=form)
+    
+    return render_template('register.html', form=form)
 
 
 # TODO: remove debug=True in production

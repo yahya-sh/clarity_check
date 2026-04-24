@@ -2,6 +2,9 @@
 # MacOS related
 .DS_Store
 
+# to prevent adding data into git
+data
+
 # Python default .gitignore file content:
 
 # Byte-compiled / optimized / DLL files
