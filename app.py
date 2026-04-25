@@ -17,7 +17,7 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
 app.config['SESSION_COOKIE_PATH'] = '/'
 
-def require_auth(f):
+def require_instructor(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         username = session.get('username')
@@ -93,7 +93,7 @@ def login():
     return render_template('login.html', form=form)
 
 @app.route('/dashboard')
-@require_auth
+@require_instructor
 def dashboard():
     return render_template('dashboard.html')
 
