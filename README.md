@@ -22,22 +22,8 @@ Don’t just present your message — prove it was understood.
 
 ## Prerequisites
 
-Install Flask before running the app:
- 
-```bash
-pip install flask
-```
- 
-No other third-party packages are required. The following Python Standard Library modules are used and need no installation:
- 
-- `json` — reading and writing all data files
-- `datetime` — timestamping quiz creation and session runs
-- `uuid` — generating unique IDs for presentations, questions, sessions, and runs
-- `hashlib` — hashing instructor passwords before storing
-- `secrets` — generating cryptographically safe session tokens
-- `os` — file path handling and directory creation
-- `random` — generating 6-digit session PINs
----
+- Flask
+- Flask-WTF
  
 ## How to Run
  
