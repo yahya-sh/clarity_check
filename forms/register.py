@@ -12,8 +12,13 @@ class RegisterForm(FlaskForm):
     password = forms.PasswordField('Password', [
         validators.DataRequired(message='Password is required'),
         validators.Length(min=6, max=100, message='Password must be between 6 and 100 characters'),
+        # TODO: remove uncomment this
         # validators.Regexp(r'^(?=.*[a-zA-Z])(?=.*\d)', message='Password must contain at least one letter and one number')
     ])
+    confirm_password = forms.PasswordField('Confirm Password', [
+        validators.EqualTo('password', message='Passwords must match'),
+    ])
+    
     def to_model(self) -> User:
         return User(
             username=self.username.data,
