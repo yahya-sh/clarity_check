@@ -10,7 +10,7 @@ def username_exist(username: str) -> bool:
     user_file = users_dir / f"{username}.json"
     return user_file.exists()
 
-def get_user(username: str) -> User:
+def get_user(username: str) -> User|None:
     """Get user using username."""
     user_file = users_dir / f"{username}.json"
     if user_file.exists():
