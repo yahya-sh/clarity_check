@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-
+<h1>Dashboard</h1>
+{% if current_user %}
+    <p>Welcome, {{ current_user.username }}!</p>
+    <p>You are successfully logged in.</p>
+{% else %}
+    <p>No user found.</p>
+{% endif %}
 {% endblock %}
 

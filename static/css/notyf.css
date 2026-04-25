@@ -1,0 +1,12 @@
+.notyf__toast {
+  border-radius: 8px;
+  padding: 4px 18px;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  box-shadow: none;
+}
+
+.notyf__toast--info {
+  background-color: dodgerblue;
+}

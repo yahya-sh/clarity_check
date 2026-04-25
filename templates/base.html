@@ -10,28 +10,25 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://googleapis.com" rel="stylesheet">
     <!-- Google Fonts End -->
-     
+    <!-- Notyf Start -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='external/notyf/notyf.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/notyf.css') }}">
+    <!-- Notyf End -->
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/normalize.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
 </head>
 <body>
-    <header>
-        <nav></nav>
-    </header>
+    {% include "partials/_header.html" %}
+    {% include "partials/_messages.html" %}
     <main>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash-message flash-{{ category }}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
         {% block content %} {% endblock %}
     </main>
-    <footer></footer>
+    {% include "partials/_footer.html" %}
+    <!-- Notyf Start -->
+    <script src="{{ url_for('static', filename='external/notyf/notyf.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/notyf-flash.js') }}"></script>
+    <!-- Notyf End -->
     <script src="{{ url_for('static', filename='js/base.js') }}"></script>
 </body>
 </html>

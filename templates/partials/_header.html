@@ -1,0 +1,11 @@
+<header>
+    <nav>
+        <a href="/" class="btn btn-primary" >Home</a>
+        {% if current_user %}
+        <a href="/dashboard" class="btn btn-primary" >Dashboard</a>
+        <a href="/logout" class="btn btn-primary" >Logout</a>
+        {% else %}
+        <a href="/login" class="btn btn-primary" >Login</a>
+        {% endif %}
+    </nav>
+</header>
