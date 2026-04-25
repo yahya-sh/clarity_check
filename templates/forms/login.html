@@ -1,4 +1,4 @@
-<form method="POST" action="/register" novalidate>
+<form method="POST" action="/login" novalidate>
     {{ form.csrf_token }}
     
     <div class="form-group">
@@ -24,22 +24,8 @@
         </div>
         {% endif %}
     </div>
-
-
-    <div class="form-group">
-        {{ form.confirm_password.label(class="form-label") }}
-        {{ form.confirm_password(size=20, class="form-control" + (" is-invalid" if form.confirm_password.errors else ""), placeholder="Repeat your password here...") }}
-        {% if form.confirm_password.errors %}
-        <div class="error-messages">
-            {% for error in form.confirm_password.errors %}
-            <div class="error-message">{{ error }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-    </div>
-
     
     <div class="form-group">
-        <input type="submit" value="Register" class="btn btn-primary">
+        <input type="submit" value="Login" class="btn btn-primary">
     </div>
 </form>

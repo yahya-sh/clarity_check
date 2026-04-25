@@ -1,6 +1,7 @@
 from flask_wtf.csrf import CSRFProtect
 from flask import Flask, render_template, redirect, flash
 from forms.register import RegisterForm
+from forms.login import LoginForm
 import os
 from repositories import users as users_repo
 
@@ -30,6 +31,19 @@ def register():
     
     return render_template('register.html', form=form)
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        username = form.data.get('username')
+        password = form.data.get('password')
+        user = users_repo.get_user(username)
+        if user and user.check_password(password):
+            flash('Login successful!', 'success')
+            return redirect('/')
+        else:
+            flash('Invalid username or password', 'error')
+    return render_template('login.html', form=form)
 
 # TODO: remove debug=True in production
 if __name__ == "__main__":
