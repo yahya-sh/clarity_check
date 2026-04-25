@@ -1,7 +1,6 @@
 from flask_wtf import FlaskForm
 import wtforms as forms
 from wtforms import validators
-from models.user import User
 
 class LoginForm(FlaskForm):
     username = forms.StringField('Username', [
