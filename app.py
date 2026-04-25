@@ -40,10 +40,14 @@ def login():
         user = users_repo.get_user(username)
         if user and user.check_password(password):
             flash('Login successful!', 'success')
-            return redirect('/')
+            return redirect('/dashboard')
         else:
             flash('Invalid username or password', 'error')
     return render_template('login.html', form=form)
+
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
 
 # TODO: remove debug=True in production
 if __name__ == "__main__":
