@@ -281,6 +281,42 @@ def save_question_route(presentation_id, objective_id):
     save_presentation(presentation)
     return jsonify({'success': True, 'question_id': question_id})
 
+@routes.route('/presentations/<presentation_id>/objectives/<objective_id>/questions/<question_id>/delete', methods=['POST'])
+@require_instructor
+def delete_question_route(presentation_id, objective_id, question_id):
+    username = session.get('username')
+    try:
+        presentation = load_presentation(username, presentation_id)
+    except (FileNotFoundError, KeyError, ValueError):
+        flash('Presentation not found.', 'error')
+        return redirect(url_for('instructor.presentation_page', presentation_id=presentation_id))
+
+    objectives = presentation.objectives if isinstance(presentation.objectives, list) else []
+    objective = next((item for item in objectives if item.get('objective_id') == objective_id), None)
+    if objective is None:
+        flash('Objective not found.', 'error')
+        return redirect(url_for('instructor.presentation_page', presentation_id=presentation_id))
+
+    questions = objective.get('questions', [])
+    if not isinstance(questions, list):
+        questions = []
+        objective['questions'] = questions
+
+    filtered_questions = [question for question in questions if question.get('question_id') != question_id]
+
+    if len(filtered_questions) == len(questions):
+        flash('Question not found.', 'error')
+        return redirect(url_for('instructor.presentation_page', presentation_id=presentation_id))
+
+    for index, question in enumerate(sorted(filtered_questions, key=lambda item: item.get('order', 0))):
+        question['order'] = index
+
+    objective['questions'] = filtered_questions
+    save_presentation(presentation)
+    flash('Question deleted successfully.', 'success')
+    return redirect(url_for('instructor.presentation_page', presentation_id=presentation_id))
+
+
 @routes.route('/presentations/<presentation_id>/delete', methods=['POST'])
 @require_instructor
 def delete_presentation_route(presentation_id):
