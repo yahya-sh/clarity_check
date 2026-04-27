@@ -299,6 +299,24 @@
         status: statusSelect.value
     };
 
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this, args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(function() {
+                func.apply(context, args);
+            }, wait);
+        };
+    }
+
+    const saveQuestionDraft = debounce(function() {
+        if (questionModal.classList.contains('hidden') || questionEditMode !== 'create') return;
+        const payload = collectQuestionFormData();
+        if (!payload.objective_id) return;
+        localStorage.setItem('draft_question_' + payload.objective_id, JSON.stringify(payload));
+    }, 500);
+
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('edit') === 'true') {
         setEditing(true);
@@ -490,6 +508,7 @@
         }
         applyTypeTabStyles();
         syncCorrectInputType();
+        if (typeof saveQuestionDraft === 'function') saveQuestionDraft();
     }
 
     function updateChoiceTypeVisual(row) {
@@ -578,6 +597,7 @@
             syncChoicesEmptyState();
             syncCorrectInputType();
             syncChoiceInputValues();
+            if (typeof saveQuestionDraft === 'function') saveQuestionDraft();
         });
 
         syncChoicesEmptyState();
@@ -585,6 +605,7 @@
         updateChoiceTypeVisual(row);
         syncChoiceVisualState(row);
         syncChoiceInputValues();
+        if (typeof saveQuestionDraft === 'function') saveQuestionDraft();
     }
 
     function clearQuestionFormError() {
@@ -602,14 +623,28 @@
         clearQuestionFormError();
 
         const objectiveId = (payload && payload.objective_id) ? payload.objective_id : activeObjectiveId;
-        const questionId = (payload && payload.question_id) ? payload.question_id : generateQuestionId();
-        const text = (payload && payload.text) ? payload.text : '';
-        const rawType = (payload && payload.type) ? payload.type : 'single_choice';
+        
+        let targetPayload = payload || {};
+        if (mode === 'create' && objectiveId) {
+            const savedDraft = localStorage.getItem('draft_question_' + objectiveId);
+            if (savedDraft) {
+                try {
+                    const parsedDraft = JSON.parse(savedDraft);
+                    targetPayload = Object.assign({}, targetPayload, parsedDraft);
+                } catch (e) {
+                    console.error('Failed to parse question draft', e);
+                }
+            }
+        }
+
+        const questionId = targetPayload.question_id ? targetPayload.question_id : generateQuestionId();
+        const text = targetPayload.text ? targetPayload.text : '';
+        const rawType = targetPayload.type ? targetPayload.type : 'single_choice';
         const normalizedType = rawType === 'multiple' ? 'multiple_choice' : (rawType === 'single' ? 'single_choice' : rawType);
-        const points = payload && payload.points !== undefined && payload.points !== null ? payload.points : 100;
-        const timeLimit = payload && payload.time_limit !== undefined && payload.time_limit !== null ? payload.time_limit : 30;
-        const choices = payload && Array.isArray(payload.choices) ? payload.choices : [];
-        const correctIndices = payload && Array.isArray(payload.correct_indices) ? payload.correct_indices : [];
+        const points = targetPayload.points !== undefined && targetPayload.points !== null ? targetPayload.points : 100;
+        const timeLimit = targetPayload.time_limit !== undefined && targetPayload.time_limit !== null ? targetPayload.time_limit : 30;
+        const choices = Array.isArray(targetPayload.choices) ? targetPayload.choices : [];
+        const correctIndices = Array.isArray(targetPayload.correct_indices) ? targetPayload.correct_indices : [];
 
         questionModalTitle.textContent = mode === 'update' ? 'Update Question' : 'New Question';
         questionObjectiveId.value = objectiveId || '';
@@ -1026,6 +1061,13 @@
         });
     });
 
+    questionForm.addEventListener('input', function() {
+        if (typeof saveQuestionDraft === 'function') saveQuestionDraft();
+    });
+    questionForm.addEventListener('change', function() {
+        if (typeof saveQuestionDraft === 'function') saveQuestionDraft();
+    });
+
     questionForm.addEventListener('submit', function(event) {
         event.preventDefault();
         clearQuestionFormError();
@@ -1073,6 +1115,9 @@
             .then(function(result) {
                 if (result.status < 200 || result.status >= 300) {
                     throw new Error(result.data && result.data.error ? result.data.error : 'Failed to save question.');
+                }
+                if (questionEditMode === 'create' && payload.objective_id) {
+                    localStorage.removeItem('draft_question_' + payload.objective_id);
                 }
                 closeQuestionModal();
                 const row = document.querySelector('[data-objective-id=\"' + payload.objective_id + '\"]');
