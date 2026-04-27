@@ -58,15 +58,28 @@
                         role="link"
                         aria-label="Open presentation {{ presentation.title }}"
                     >
-                        <button
-                            type="button"
-                            class="absolute top-3 right-3 z-20 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-red-600 hover:bg-red-50 hover:text-red-700"
-                            onclick="event.stopPropagation(); showDeleteModal('{{ url_for('instructor.delete_presentation_route', presentation_id=presentation.id) }}', '{{ csrf_token() }}')"
-                            aria-label="Delete presentation"
-                            title="Delete presentation"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                        </button>
+                        <div class="absolute top-3 right-3 z-20 flex gap-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
+                            {% if presentation.status == 'published' %}
+                                <a
+                                    href="{{ url_for('instructor.run_presentation', presentation_id=presentation.id) }}"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-green-600 hover:bg-green-50 hover:text-green-700 transition-colors"
+                                    onclick="event.stopPropagation()"
+                                    aria-label="Run presentation"
+                                    title="Run presentation"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                </a>
+                            {% endif %}
+                            <button
+                                type="button"
+                                class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
+                                onclick="event.stopPropagation(); showDeleteModal('{{ url_for('instructor.delete_presentation_route', presentation_id=presentation.id) }}', '{{ csrf_token() }}')"
+                                aria-label="Delete presentation"
+                                title="Delete presentation"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                            </button>
+                        </div>
                         <h3 class="text-lg font-semibold text-text mb-2">{{ presentation.title }}</h3>
                         {% if presentation.description %}
                             <p class="text-muted text-sm mb-4">{{ presentation.description }}</p>
