@@ -8,27 +8,22 @@
     <!-- Google Fonts Start -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://googleapis.com" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Google Fonts End -->
-    <!-- Notyf Start -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='external/notyf/notyf.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/notyf.css') }}">
-    <!-- Notyf End -->
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/normalize.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
 </head>
-<body>
+<body class="bg-bg text-text font-sans antialiased min-h-screen flex flex-col">
     {% include "partials/_header.html" %}
     {% include "partials/_messages.html" %}
     <main>
         {% block content %} {% endblock %}
     </main>
     {% include "partials/_footer.html" %}
-    <!-- Notyf Start -->
     <script src="{{ url_for('static', filename='external/notyf/notyf.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/notyf-flash.js') }}"></script>
-    <!-- Notyf End -->
+    <script src="{{ url_for('static', filename='js/notyf.js') }}"></script>
     <script src="{{ url_for('static', filename='js/base.js') }}"></script>
 </body>
 </html>
