@@ -49,7 +49,7 @@ def create_presentation():
         status='draft'
     )
     save_presentation(presentation)
-    return redirect(url_for('instructor.presentation_page', presentation_id=presentation.id))
+    return redirect(url_for('instructor.presentation_page', presentation_id=presentation.id, edit='true'))
 
 
 @routes.route('/presentations/<presentation_id>', methods=['GET', 'POST'])
