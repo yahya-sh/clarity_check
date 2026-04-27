@@ -5,6 +5,79 @@
 {% if current_user %}
     <p>Welcome, {{ current_user.username }}!</p>
     <p>You are successfully logged in.</p>
+
+    <!-- Demo Alert Button -->
+    <div class="mt-8 p-6 bg-surface/50 border border-border rounded-xl">
+        <h2 class="text-lg font-semibold text-text mb-4">Alert Demo</h2>
+        <p class="text-muted mb-4">Click the button below to test the custom alert system with random messages.</p>
+        <button id="demo-alert-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-accent text-white shadow hover:bg-accent/90 h-10 px-6">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            Show Random Alert
+        </button>
+    </div>
+
+    <script>
+    (function() {
+        const demoMessages = {
+            success: [
+                'Presentation created successfully!',
+                'Quiz responses saved.',
+                'Settings updated successfully.',
+                'Invite sent to participant.',
+                'Export completed!',
+                'All changes saved.'
+            ],
+            error: [
+                'Failed to save presentation.',
+                'Network connection lost.',
+                'Invalid quiz answer format.',
+                'Session expired. Please log in again.',
+                'Failed to load dashboard data.',
+                'Permission denied.'
+            ],
+            info: [
+                'New feature: Real-time analytics now available!',
+                'Tip: Use QR codes for faster audience access.',
+                '3 new responses received.',
+                'Presentation will auto-save in 30 seconds.',
+                'Maintenance scheduled for tonight.',
+                'Pro tip: Add interactive polls to boost engagement.'
+            ],
+            warning: [
+                'Server will be restarted in 30 minutes.',
+                'Temporary connection loss. Retrying...',
+                'Failed to save question. Please check your input.',
+                'Warning: You have reached the maximum number of questions.',
+                'Session will expire in 10 minutes.',
+                'Your internet connection is slow. Please try again later.'
+            ],
+        };
+
+
+        function getRandomItem(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function showRandomAlert() {
+            const types = ['success', 'error', 'info', 'warning'];
+            const type = getRandomItem(types);
+            const message = getRandomItem(demoMessages[type]);
+
+            // Use window.notyf to ensure we get the enhanced version
+            const enhancedNotyf = window.notyf;
+
+            if (typeof enhancedNotyf !== 'undefined') {
+                if (type === 'success' || type === 'error') {
+                    enhancedNotyf[type](message);
+                } else {
+                    enhancedNotyf.open({ type, message });
+                }
+            }
+        }
+
+        document.getElementById('demo-alert-btn').addEventListener('click', showRandomAlert);
+    })();
+    </script>
 {% else %}
     <p>No user found.</p>
 {% endif %}

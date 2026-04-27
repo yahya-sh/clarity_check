@@ -1,45 +1,59 @@
-<form method="POST" action="/register" novalidate>
-    {{ form.csrf_token }}
-    
-    <div class="form-group">
-        {{ form.username.label(class="form-label") }}
-        {{ form.username(size=20, class="form-control" + (" is-invalid" if form.username.errors else ""), placeholder="Enter your username here...") }}
-        {% if form.username.errors %}
-        <div class="error-messages">
-            {% for error in form.username.errors %}
-            <div class="error-message">{{ error }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-    </div>
-    
-    <div class="form-group">
-        {{ form.password.label(class="form-label") }}
-        {{ form.password(size=20, class="form-control" + (" is-invalid" if form.password.errors else ""), placeholder="Enter your password here...") }}
-        {% if form.password.errors %}
-        <div class="error-messages">
-            {% for error in form.password.errors %}
-            <div class="error-message">{{ error }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-    </div>
+<form method="POST" action="/register" novalidate class="space-y-5">
+  {{ form.csrf_token }}
 
-
-    <div class="form-group">
-        {{ form.confirm_password.label(class="form-label") }}
-        {{ form.confirm_password(size=20, class="form-control" + (" is-invalid" if form.confirm_password.errors else ""), placeholder="Repeat your password here...") }}
-        {% if form.confirm_password.errors %}
-        <div class="error-messages">
-            {% for error in form.confirm_password.errors %}
-            <div class="error-message">{{ error }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
+  <!-- Username Field -->
+  <div class="space-y-2">
+    {{ form.username.label(class="text-sm font-medium text-text") }}
+    {{ form.username(
+      size=20,
+      class="flex h-10 w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent disabled:cursor-not-allowed disabled:opacity-50 transition-colors" + (" border-red-500 focus:ring-red-500/50 focus:border-red-500" if form.username.errors else ""),
+      placeholder="Enter your username"
+    ) }}
+    {% if form.username.errors %}
+    <div class="text-sm text-red-500">
+      {% for error in form.username.errors %}
+      <p>{{ error }}</p>
+      {% endfor %}
     </div>
+    {% endif %}
+  </div>
 
-    
-    <div class="form-group">
-        <input type="submit" value="Register" class="btn btn-primary">
+  <!-- Password Field -->
+  <div class="space-y-2">
+    {{ form.password.label(class="text-sm font-medium text-text") }}
+    {{ form.password(
+      size=20,
+      class="flex h-10 w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent disabled:cursor-not-allowed disabled:opacity-50 transition-colors" + (" border-red-500 focus:ring-red-500/50 focus:border-red-500" if form.password.errors else ""),
+      placeholder="Enter your password"
+    ) }}
+    {% if form.password.errors %}
+    <div class="text-sm text-red-500">
+      {% for error in form.password.errors %}
+      <p>{{ error }}</p>
+      {% endfor %}
     </div>
+    {% endif %}
+  </div>
+
+  <!-- Confirm Password Field -->
+  <div class="space-y-2">
+    {{ form.confirm_password.label(class="text-sm font-medium text-text") }}
+    {{ form.confirm_password(
+      size=20,
+      class="flex h-10 w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent disabled:cursor-not-allowed disabled:opacity-50 transition-colors" + (" border-red-500 focus:ring-red-500/50 focus:border-red-500" if form.confirm_password.errors else ""),
+      placeholder="Confirm your password"
+    ) }}
+    {% if form.confirm_password.errors %}
+    <div class="text-sm text-red-500">
+      {% for error in form.confirm_password.errors %}
+      <p>{{ error }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Submit Button -->
+  <button type="submit" class="inline-flex w-full items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-11 px-4 py-2 mt-2">
+    Create Account
+  </button>
 </form>
