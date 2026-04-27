@@ -1,6 +1,234 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="flex-1 flex flex-col items-center w-full">
+  <!-- Hero Section -->
+  <section class="w-full flex justify-center py-24 md:py-32 lg:py-40 relative overflow-hidden">
+    <!-- Subtle Background Glow -->
+    <div class="absolute inset-0 bg-bg/50 pointer-events-none z-[-1] flex items-center justify-center">
+      <div class="w-[600px] h-[600px] bg-accent/20 rounded-full blur-[120px] opacity-50 mix-blend-screen"></div>
+    </div>
+    
+    <div class="container px-4 md:px-6 flex flex-col items-center text-center space-y-8 relative z-10">
+      <div class="inline-flex items-center rounded-full border border-border px-3 py-1 text-sm font-medium bg-surface/50 text-muted backdrop-blur-sm">
+        <span class="flex h-2 w-2 rounded-full bg-accent mr-2"></span>
+        Redefining Presentations
+      </div>
+      
+      <h1 class="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight max-w-4xl text-text drop-shadow-sm">
+        Turn Every Presentation Into <br class="hidden sm:block" />
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-muted">Proof of Understanding</span>
+      </h1>
+      
+      <p class="max-w-[700px] text-muted md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+        Don’t just present your message — prove it was understood. Instantly verify audience comprehension through quick, seamless interactive checks.
+      </p>
 
+      <!-- Hero Dashboard Preview -->
+      <div class="relative w-full max-w-4xl mt-8 px-4 sm:px-0">
+        <div class="absolute -inset-1 bg-gradient-to-r from-accent/20 to-purple-500/20 rounded-2xl blur-xl opacity-50"></div>
+        <div class="relative bg-surface border border-border rounded-xl overflow-hidden shadow-2xl">
+          <div class="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-bg/50 border-b border-border">
+            <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500/80"></div>
+            <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500/80"></div>
+            <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500/80"></div>
+            <div class="ml-3 sm:ml-4 text-xs text-muted truncate">ClarityCheck Dashboard</div>
+          </div>
+          <div class="p-3 sm:p-6 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+            <div class="col-span-2 sm:col-span-2 bg-bg/50 rounded-lg p-3 sm:p-4 border border-border">
+              <div class="flex items-center justify-between mb-2 sm:mb-3">
+                <span class="text-xs sm:text-sm font-medium text-text">Understanding Score</span>
+                <span class="text-xl sm:text-2xl font-bold text-accent">87%</span>
+              </div>
+              <div class="h-1.5 sm:h-2 bg-surface rounded-full overflow-hidden">
+                <div class="h-full w-[87%] bg-gradient-to-r from-accent to-purple-500 rounded-full"></div>
+              </div>
+            </div>
+            <div class="bg-bg/50 rounded-lg p-3 sm:p-4 border border-border">
+              <div class="text-xs sm:text-sm text-muted mb-0.5 sm:mb-1">Responses</div>
+              <div class="text-lg sm:text-2xl font-bold text-text">42</div>
+            </div>
+            <div class="bg-bg/50 rounded-lg p-3 sm:p-4 border border-border">
+              <div class="text-xs sm:text-sm text-muted mb-0.5 sm:mb-1">Avg. Time</div>
+              <div class="text-lg sm:text-2xl font-bold text-text">2m 30s</div>
+            </div>
+            <div class="bg-bg/50 rounded-lg p-3 sm:p-4 border border-border">
+              <div class="text-xs sm:text-sm text-muted mb-0.5 sm:mb-1">Clarity</div>
+              <div class="text-lg sm:text-2xl font-bold text-green-400">High</div>
+            </div>
+            <div class="bg-bg/50 rounded-lg p-3 sm:p-4 border border-border">
+              <div class="text-xs sm:text-sm text-muted mb-0.5 sm:mb-1">Knowledge Gap</div>
+              <div class="text-lg sm:text-2xl font-bold text-orange-400">2 topics</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mt-8">
+        <a href="/register" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 h-11 px-8 py-2">
+          Try It Free
+        </a>
+        <a href="#" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring border border-border bg-transparent shadow-sm hover:bg-surface hover:text-text h-11 px-8 py-2">
+          See How It Works
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem Statement -->
+  <section class="w-full flex justify-center py-16 md:py-24 border-y border-border bg-surface/30">
+    <div class="container px-4 md:px-6 flex flex-col items-center text-center">
+      <h2 class="text-3xl font-bold tracking-tight text-text sm:text-4xl md:text-5xl">
+        Most presentations feel successful…
+      </h2>
+      <p class="mt-4 text-muted text-xl">
+        Smiles. Nods. Polite applause.
+      </p>
+      <div class="mt-8 p-6 rounded-2xl bg-bg border border-border max-w-2xl w-full shadow-sm">
+        <p class="text-text text-xl font-medium">
+          But did your audience actually <span class="text-accent">understand</span> the message?
+        </p>
+      </div>
+
+      <!-- Problem Illustration -->
+      <div class="mt-12 grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4 max-w-2xl w-full px-4 sm:px-0">
+        <div class="bg-surface/50 border border-border rounded-xl p-4 sm:p-6 text-center">
+          <div class="flex justify-center gap-1 mb-2 sm:mb-3">
+            <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-muted/20 flex items-center justify-center">
+              <svg class="w-3 h-3 sm:w-4 sm:h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-muted/20 flex items-center justify-center">
+              <svg class="w-3 h-3 sm:w-4 sm:h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-muted/20 flex items-center justify-center">
+              <svg class="w-3 h-3 sm:w-4 sm:h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+          </div>
+          <p class="text-xs sm:text-sm text-muted">Confused audience</p>
+        </div>
+        <div class="bg-accent/10 border border-accent/30 rounded-xl p-4 sm:p-6 text-center">
+          <div class="flex justify-center gap-1 mb-2 sm:mb-3">
+            <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-accent/20 flex items-center justify-center">
+              <svg class="w-3 h-3 sm:w-4 sm:h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-accent/20 flex items-center justify-center">
+              <svg class="w-3 h-3 sm:w-4 sm:h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-accent/20 flex items-center justify-center">
+              <svg class="w-3 h-3 sm:w-4 sm:h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+          </div>
+          <p class="text-xs sm:text-sm text-accent font-medium">Clear understanding</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features / How it Works -->
+  <section class="w-full flex justify-center py-24 md:py-32">
+    <div class="container px-4 md:px-6">
+      <div class="flex flex-col items-center justify-center space-y-4 text-center mb-16">
+        <h2 class="text-3xl font-bold tracking-tight text-text sm:text-4xl">How It Works</h2>
+        <p class="max-w-[900px] text-muted md:text-lg">
+          ClarityCheck helps presenters verify real understanding in three simple steps.
+        </p>
+      </div>
+      
+      <div class="grid max-w-5xl mx-auto items-start gap-8 md:grid-cols-3">
+        <!-- Step 1 -->
+        <div class="relative flex flex-col items-center space-y-4 p-6 bg-surface/50 border border-border rounded-xl backdrop-blur-sm transition hover:bg-surface/80">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-bg border border-border shadow-sm text-accent">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="4" rx="2" ry="2"></rect><line x1="6" x2="6.01" y1="20" y2="20"></line><line x1="10" x2="10.01" y1="20" y2="20"></line><line x1="14" x2="14.01" y1="20" y2="20"></line><line x1="18" x2="18.01" y1="20" y2="20"></line></svg>
+          </div>
+          <h3 class="text-xl font-bold text-text">Present</h3>
+          <p class="text-muted text-center leading-relaxed">
+            Deliver your presentation as usual. Engage your audience without interrupting your flow.
+          </p>
+        </div>
+        
+        <!-- Step 2 -->
+        <div class="relative flex flex-col items-center space-y-4 p-6 bg-surface/50 border border-border rounded-xl backdrop-blur-sm transition hover:bg-surface/80">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-bg border border-border shadow-sm text-accent">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>
+          </div>
+          <h3 class="text-xl font-bold text-text">Share Quiz</h3>
+          <p class="text-muted text-center leading-relaxed">
+            After you're done, the audience answers a quick quiz via link or a simple QR code.
+          </p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="relative flex flex-col items-center space-y-4 p-6 bg-surface/50 border border-border rounded-xl backdrop-blur-sm transition hover:bg-surface/80">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-bg border border-border shadow-sm text-accent">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="18" y1="20" y2="10"></line><line x1="12" x2="12" y1="20" y2="4"></line><line x1="6" x2="6" y1="20" y2="14"></line></svg>
+          </div>
+          <h3 class="text-xl font-bold text-text">Get Insights</h3>
+          <p class="text-muted text-center leading-relaxed">
+            Instantly see what landed and what didn’t through our beautiful real-time dashboard.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Value Props -->
+  <section class="w-full flex justify-center py-24 border-t border-border bg-surface/20">
+    <div class="container px-4 md:px-6 max-w-6xl">
+      <div class="grid md:grid-cols-3 gap-6 lg:gap-12">
+        <div class="flex flex-col space-y-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 text-text mb-2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <h3 class="text-xl font-bold text-text">No Guessing</h3>
+          <p class="text-muted leading-relaxed">Stop relying on polite smiles. Know exactly what your audience retained and where the gaps are.</p>
+        </div>
+        <div class="flex flex-col space-y-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 text-text mb-2"><path d="m18 15-6-6-6 6"/></svg>
+          <h3 class="text-xl font-bold text-text">Instant Feedback</h3>
+          <p class="text-muted leading-relaxed">Results appear immediately after sessions, allowing you to follow up on misunderstandings on the spot.</p>
+        </div>
+        <div class="flex flex-col space-y-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 text-text mb-2"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>
+          <h3 class="text-xl font-bold text-text">Better Presentations</h3>
+          <p class="text-muted leading-relaxed">Use data to continuously improve your delivery, refine your messaging, and increase your impact.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="w-full flex justify-center py-24 md:py-32 bg-surface border-t border-border relative overflow-hidden">
+    <!-- Animated Gradient Orbs -->
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-accent/20 rounded-full blur-[128px] opacity-60"></div>
+    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-[128px] opacity-60"></div>
+
+    <div class="container px-4 md:px-6 flex flex-col items-center text-center relative z-10">
+      <!-- Badge -->
+      <div class="inline-flex items-center rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-sm font-medium text-accent mb-6 backdrop-blur-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+        Free to get started
+      </div>
+
+      <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight max-w-3xl">
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-muted">Stop Assuming.</span>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-accent to-purple-400">Start Knowing.</span>
+      </h2>
+
+      <p class="mt-6 text-muted md:text-xl max-w-[600px] leading-relaxed">
+        Join thousands of presenters who verify understanding and deliver impactful presentations.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div class="flex flex-col sm:flex-row gap-4 mt-10">
+        <a href="/register" class="group inline-flex items-center justify-center rounded-full text-base font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow-lg shadow-accent/25 hover:shadow-xl hover:shadow-accent/30 hover:scale-105 h-12 px-10">
+          Get Started Free
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+        </a>
+        <a href="#" class="inline-flex items-center justify-center rounded-full text-base font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-border bg-transparent hover:bg-surface hover:border-muted h-12 px-8">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 w-5 h-5 text-muted"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+          Watch Demo
+        </a>
+      </div>
+    </div>
+  </section>
+</div>
 {% endblock %}
 
