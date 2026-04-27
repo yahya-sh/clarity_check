@@ -121,37 +121,19 @@
             <div class="bg-surface/50 border border-border rounded-xl p-4 sm:p-6">
                 <h2 class="text-xl font-semibold text-text mb-4">Session Details</h2>
                 
-                <!-- Stats -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                    <div class="text-center">
-                        <div class="text-2xl font-bold text-accent">{{ objectives_count }}</div>
-                        <div class="text-sm text-muted">Objectives</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-2xl font-bold text-accent">{{ questions_count }}</div>
-                        <div class="text-sm text-muted">Questions</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-2xl font-bold text-accent">~{{ "%.0f"|format(estimated_duration) }}min</div>
-                        <div class="text-sm text-muted">Est. duration</div>
-                    </div>
-                </div>
-
                 <!-- Objectives List -->
                 {% if presentation.objectives %}
-                    <div class="border-t border-border pt-6">
+                    <div>
                         <h3 class="text-sm font-medium text-text mb-4">Objectives in this quiz</h3>
                         <div class="space-y-3">
                             {% for objective in presentation.objectives %}
                                 <div class="border border-accent rounded-lg p-4">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center gap-3 flex-1">
-                                            <span class="flex-shrink-0 w-6 h-6 bg-accent/20 text-accent rounded-full flex items-center justify-center text-xs font-medium">{{ loop.index }}</span>
-                                            <span class="text-sm text-text">{{ objective.text }}</span>
-                                        </div>
-                                        <div class="text-right">
-                                            <div class="text-xs text-muted">{{ objective.questions|length if objective.questions else 0 }} questions</div>
-                                        </div>
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="flex-shrink-0 w-6 h-6 bg-accent/20 text-accent rounded-full flex items-center justify-center text-xs font-medium">{{ loop.index }}</span>
+                                        <span class="text-sm text-text">{{ objective.text }}</span>
+                                    </div>
+                                    <div class="text-xs text-muted ml-9">
+                                        {{ objective.questions|length if objective.questions else 0 }} questions
                                     </div>
                                 </div>
                             {% endfor %}
