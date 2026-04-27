@@ -1,0 +1,1220 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="mb-4 mt-4">
+        <a href="{{ url_for('instructor.dashboard') }}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-secondary text-text border border-border shadow-sm hover:bg-secondary/70 h-9 px-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            Back to Dashboard
+        </a>
+    </div>
+
+    <div class="space-y-4">
+        <div class="bg-surface/50 border border-border rounded-xl p-4 md:p-5">
+            <div class="flex items-start justify-between gap-4 mb-4">
+                <div class="w-full">
+                    <p class="text-xs uppercase tracking-wider text-muted mb-1.5">Presentation</p>
+                    <h1 id="titleText" class="text-2xl md:text-3xl font-bold text-text leading-tight" contenteditable="false">{{ presentation.title }}</h1>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                    <button id="editBtn" type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors bg-primary text-primary-foreground shadow hover:bg-primary/90" title="Edit" aria-label="Edit">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                    </button>
+                    <button id="saveBtn" type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors bg-primary text-primary-foreground shadow hover:bg-primary/90" title="Save" aria-label="Save" style="display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+                    </button>
+                    <button id="cancelBtn" type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors bg-surface border border-border text-text shadow-sm hover:bg-surface/80" title="Cancel" aria-label="Cancel" style="display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-muted mb-1.5">Description</p>
+                    <p id="descriptionText" class="text-sm md:text-base text-text whitespace-pre-wrap min-h-[56px]" contenteditable="false">{{ presentation.description if presentation.description else '' }}</p>
+                </div>
+
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-muted mb-1.5">Status</p>
+                    <div class="flex items-center gap-2">
+                        <span id="statusBadge" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border border-border bg-background text-text">
+                            {% if presentation.status == 'draft' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                            {% elif presentation.status == 'published' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 9.2 17 19 7.5"/></svg>
+                            {% elif presentation.status == 'archived' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+                            {% else %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/></svg>
+                            {% endif %}
+                            <span>{{ presentation.status|capitalize }}</span>
+                        </span>
+                        <select id="statusSelect" class="hidden h-8 px-2.5 border border-border rounded-md bg-background text-text text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="draft" {% if presentation.status == 'draft' %}selected{% endif %}>Draft</option>
+                            <option value="published" {% if presentation.status == 'published' %}selected{% endif %}>Published</option>
+                            <option value="archived" {% if presentation.status == 'archived' %}selected{% endif %}>Archived</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <form id="saveForm" method="POST" class="hidden">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="title" id="titleInput">
+                <input type="hidden" name="description" id="descriptionInput">
+                <input type="hidden" name="status" id="statusInput">
+            </form>
+        </div>
+
+        <div class="bg-surface/50 border border-border rounded-xl p-4 md:p-5">
+            <div class="grid gap-4 lg:grid-cols-2">
+                <div class="min-w-0">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <h2 class="text-lg font-semibold text-text">Objectives</h2>
+                        <button id="newObjectiveBtn" type="button" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm font-medium text-text transition-colors hover:bg-secondary/70" title="Create objective" aria-label="Create objective">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                            New Objective
+                        </button>
+                    </div>
+
+                    <div id="objectivesList" class="space-y-2">
+                        {% for objective in presentation.objectives|sort(attribute='order') %}
+                            <div class="objective-row group flex items-center gap-2 rounded-md border border-border bg-background/70 px-3 py-2 cursor-pointer transition-colors hover:bg-secondary/50" data-objective-id="{{ objective.objective_id }}" data-objective-text="{{ objective.text|e }}">
+                                <div class="text-xs text-muted w-6">{{ objective.order + 1 }}.</div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="objective-text text-sm text-text truncate">{{ objective.text }}</p>
+                                    <input type="text" class="objective-edit-input hidden h-8 w-full rounded-md border border-border bg-background px-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary" value="{{ objective.text }}" maxlength="300">
+                                </div>
+                                <div class="objective-actions flex items-center gap-1 opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto">
+                                    <button type="button" class="objective-edit-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-text hover:bg-secondary/70" title="Edit" aria-label="Edit objective">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                    </button>
+                                    <button type="button" class="objective-delete-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-red-600 hover:bg-red-50 hover:text-red-700" title="Delete" aria-label="Delete objective">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                                    </button>
+                                </div>
+                                <div class="objective-edit-actions hidden items-center gap-1">
+                                    <button type="button" class="objective-save-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-green-700 hover:bg-green-50" title="Save" aria-label="Save objective">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+                                    </button>
+                                    <button type="button" class="objective-cancel-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-text hover:bg-secondary/70" title="Cancel" aria-label="Cancel objective edit">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div id="emptyObjectives" class="{% if presentation.objectives %}hidden {% endif %}rounded-md border border-dashed border-border px-3 py-4 text-sm text-muted text-center">
+                        No objectives yet.
+                    </div>
+
+                    <form id="createObjectiveForm" method="POST" class="hidden" action="{{ url_for('instructor.create_objective_route', presentation_id=presentation.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="objective_text" id="createObjectiveTextInput">
+                    </form>
+
+                    <form id="updateObjectiveForm" method="POST" class="hidden">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="objective_text" id="updateObjectiveTextInput">
+                    </form>
+                </div>
+
+                <div class="min-w-0">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <h2 class="text-lg font-semibold text-text">Questions</h2>
+                        <button id="newQuestionBtn" type="button" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm font-medium text-text/80 transition-colors hover:bg-secondary/70" title="Create question" aria-label="Create question">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                            New Question
+                        </button>
+                    </div>
+
+                    <p id="questionPanelSubtitle" class="text-xs text-muted mb-2">Select an objective to view questions.</p>
+                    <div id="questionsList" class="space-y-2"></div>
+                    <div id="emptyQuestions" class="rounded-md border border-dashed border-border px-3 py-4 text-sm text-muted text-center">
+                        No questions to display.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="deleteObjectiveModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-surface border border-border rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-500/20 rounded-full mb-4">
+                <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-text text-center mb-2">Delete Objective</h3>
+            <p class="text-muted text-center mb-6">Are you sure you want to delete this objective? This action cannot be undone.</p>
+
+            <form id="deleteObjectiveForm" method="POST" class="hidden">
+                <input type="hidden" name="csrf_token" id="deleteObjectiveCsrfToken" value="{{ csrf_token() }}">
+            </form>
+
+            <div class="flex gap-3">
+                <button type="button" onclick="closeDeleteObjectiveModal()" class="flex-1 px-4 py-2 text-text bg-secondary border border-border rounded-lg hover:bg-secondary/70 transition-colors font-medium cursor-pointer">
+                    Cancel
+                </button>
+                <button type="button" onclick="confirmDeleteObjective()" class="flex-1 px-4 py-2 text-white bg-red-600 border border-red-600 rounded-lg hover:bg-red-700 transition-colors font-medium cursor-pointer">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="deleteQuestionModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-surface border border-border rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-500/20 rounded-full mb-4">
+                <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-text text-center mb-2">Delete Question</h3>
+            <p class="text-muted text-center mb-6">Are you sure you want to delete this question? This action cannot be undone.</p>
+
+            <form id="deleteQuestionForm" method="POST" class="hidden">
+                <input type="hidden" name="csrf_token" id="deleteQuestionCsrfToken" value="{{ csrf_token() }}">
+            </form>
+
+            <div class="flex gap-3">
+                <button type="button" onclick="closeDeleteQuestionModal()" class="flex-1 px-4 py-2 text-text bg-secondary border border-border rounded-lg hover:bg-secondary/70 transition-colors font-medium cursor-pointer">
+                    Cancel
+                </button>
+                <button type="button" onclick="confirmDeleteQuestion()" class="flex-1 px-4 py-2 text-white bg-red-600 border border-red-600 rounded-lg hover:bg-red-700 transition-colors font-medium cursor-pointer">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="questionModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-3 sm:p-4">
+        <div class="bg-surface border border-border rounded-xl shadow-2xl w-full max-w-2xl p-4 sm:p-5 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="questionModalTitle" class="text-lg font-semibold text-text">New Question</h3>
+                <button type="button" id="closeQuestionModalBtn" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-text hover:bg-secondary/70" aria-label="Close question modal" title="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+            </div>
+
+            <form id="questionForm" class="space-y-3">
+                <input type="hidden" id="questionFormCsrf" value="{{ csrf_token() }}">
+                <input id="questionObjectiveId" type="hidden">
+                <input id="questionIdInput" type="hidden">
+                <input id="questionTypeInput" type="hidden" value="single_choice">
+
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-muted mb-1">Text</label>
+                    <textarea id="questionTextInput" rows="3" class="w-full rounded-md border border-border bg-background px-2.5 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Enter question text"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-muted mb-1">Type</label>
+                    <div class="inline-flex rounded-md border border-border bg-background p-0.5 w-full sm:w-auto">
+                        <button id="questionTypeSingleBtn" type="button" class="question-type-tab h-8 px-3 rounded text-sm font-medium text-text transition-colors" data-type="single_choice">
+                            Single Choice
+                        </button>
+                        <button id="questionTypeMultipleBtn" type="button" class="question-type-tab h-8 px-3 rounded text-sm font-medium text-text transition-colors" data-type="multiple_choice">
+                            Multiple Choices
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-muted mb-1">Points</label>
+                        <input id="questionPointsInput" type="number" min="1" value="100" class="h-9 w-full rounded-md border border-border bg-background px-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-muted mb-1">Time Limit (sec)</label>
+                        <input id="questionTimeLimitInput" type="number" min="1" value="30" class="h-9 w-full rounded-md border border-border bg-background px-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <label class="block text-xs uppercase tracking-wider text-muted">Choices / Correct Indices</label>
+                        <button id="addChoiceBtn" type="button" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-medium text-text transition-colors hover:bg-secondary/70">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                            Add Choice
+                        </button>
+                    </div>
+                    <div id="choicesList" class="space-y-2"></div>
+                    <p id="emptyChoicesText" class="text-xs text-muted mt-1">No choices yet. Add at least one choice.</p>
+                </div>
+
+                <div id="questionFormError" class="hidden rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"></div>
+
+                <div class="flex gap-2 pt-1">
+                    <button type="button" id="cancelQuestionBtn" class="flex-1 h-9 rounded-md border border-border bg-secondary text-text text-sm font-medium hover:bg-secondary/70">
+                        Cancel
+                    </button>
+                    <button type="submit" id="saveQuestionBtn" class="flex-1 h-9 rounded-md border border-primary bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">
+                        Save Question
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const titleText = document.getElementById('titleText');
+    const descriptionText = document.getElementById('descriptionText');
+    const statusBadge = document.getElementById('statusBadge');
+    const statusSelect = document.getElementById('statusSelect');
+    const editBtn = document.getElementById('editBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const saveForm = document.getElementById('saveForm');
+    const titleInput = document.getElementById('titleInput');
+    const descriptionInput = document.getElementById('descriptionInput');
+    const statusInput = document.getElementById('statusInput');
+
+    const objectivesList = document.getElementById('objectivesList');
+    const emptyObjectives = document.getElementById('emptyObjectives');
+    const newObjectiveBtn = document.getElementById('newObjectiveBtn');
+    const createObjectiveForm = document.getElementById('createObjectiveForm');
+    const createObjectiveTextInput = document.getElementById('createObjectiveTextInput');
+    const updateObjectiveForm = document.getElementById('updateObjectiveForm');
+    const updateObjectiveTextInput = document.getElementById('updateObjectiveTextInput');
+    const questionsList = document.getElementById('questionsList');
+    const emptyQuestions = document.getElementById('emptyQuestions');
+    const questionPanelSubtitle = document.getElementById('questionPanelSubtitle');
+    const newQuestionBtn = document.getElementById('newQuestionBtn');
+    const questionModal = document.getElementById('questionModal');
+    const questionModalTitle = document.getElementById('questionModalTitle');
+    const closeQuestionModalBtn = document.getElementById('closeQuestionModalBtn');
+    const questionForm = document.getElementById('questionForm');
+    const questionFormError = document.getElementById('questionFormError');
+    const questionObjectiveId = document.getElementById('questionObjectiveId');
+    const questionIdInput = document.getElementById('questionIdInput');
+    const questionTextInput = document.getElementById('questionTextInput');
+    const questionTypeInput = document.getElementById('questionTypeInput');
+    const questionTypeSingleBtn = document.getElementById('questionTypeSingleBtn');
+    const questionTypeMultipleBtn = document.getElementById('questionTypeMultipleBtn');
+    const questionPointsInput = document.getElementById('questionPointsInput');
+    const questionTimeLimitInput = document.getElementById('questionTimeLimitInput');
+    const addChoiceBtn = document.getElementById('addChoiceBtn');
+    const choicesList = document.getElementById('choicesList');
+    const emptyChoicesText = document.getElementById('emptyChoicesText');
+    const cancelQuestionBtn = document.getElementById('cancelQuestionBtn');
+    const saveQuestionBtn = document.getElementById('saveQuestionBtn');
+
+    const deleteObjectiveModal = document.getElementById('deleteObjectiveModal');
+    const deleteObjectiveForm = document.getElementById('deleteObjectiveForm');
+    const deleteQuestionModal = document.getElementById('deleteQuestionModal');
+    const deleteQuestionForm = document.getElementById('deleteQuestionForm');
+    const csrfToken = '{{ csrf_token() }}';
+    const presentationId = '{{ presentation.id }}';
+
+    const emptyDescriptionText = '';
+    let activeObjectiveId = null;
+    let questionEditMode = 'create';
+    let objectiveQuestionsMap = new Map();
+    let initial = {
+        title: titleText.textContent.trim(),
+        description: descriptionText.textContent.trim() === emptyDescriptionText ? '' : descriptionText.textContent.trim(),
+        status: statusSelect.value
+    };
+
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this, args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(function() {
+                func.apply(context, args);
+            }, wait);
+        };
+    }
+
+    const saveQuestionDraft = debounce(function() {
+        if (questionModal.classList.contains('hidden') || questionEditMode !== 'create') return;
+        const payload = collectQuestionFormData();
+        if (!payload.objective_id) return;
+        localStorage.setItem('draft_question_' + payload.objective_id, JSON.stringify(payload));
+    }, 500);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('edit') === 'true') {
+        setEditing(true);
+    }
+
+    function getStatusIcon(status) {
+        if (status === 'draft') {
+            return '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+        }
+        if (status === 'published') {
+            return '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 9.2 17 19 7.5"/></svg>';
+        }
+        if (status === 'archived') {
+            return '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>';
+        }
+        return '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/></svg>';
+    }
+
+    function renderStatusBadge(status) {
+        const label = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown';
+        statusBadge.innerHTML = getStatusIcon(status) + '<span>' + label + '</span>';
+    }
+
+    function setEditing(editing) {
+        titleText.contentEditable = editing ? 'true' : 'false';
+        descriptionText.contentEditable = editing ? 'true' : 'false';
+        titleText.classList.toggle('outline-none', editing);
+        descriptionText.classList.toggle('outline-none', editing);
+        titleText.classList.toggle('ring-2', editing);
+        descriptionText.classList.toggle('ring-2', editing);
+        titleText.classList.toggle('ring-primary', editing);
+        descriptionText.classList.toggle('ring-primary', editing);
+        titleText.classList.toggle('rounded', editing);
+        descriptionText.classList.toggle('rounded', editing);
+        titleText.classList.toggle('px-1', editing);
+        descriptionText.classList.toggle('px-1', editing);
+
+        statusBadge.classList.toggle('hidden', editing);
+        statusSelect.classList.toggle('hidden', !editing);
+
+        editBtn.style.display = editing ? 'none' : 'inline-flex';
+        saveBtn.style.display = editing ? 'inline-flex' : 'none';
+        cancelBtn.style.display = editing ? 'inline-flex' : 'none';
+    }
+
+    function syncObjectiveEmptyState() {
+        const hasRows = objectivesList.querySelectorAll('[data-objective-id], [data-new-objective-row]').length > 0;
+        emptyObjectives.classList.toggle('hidden', hasRows);
+    }
+
+    function setObjectiveEditingState(item, editing) {
+        const textEl = item.querySelector('.objective-text');
+        const inputEl = item.querySelector('.objective-edit-input');
+        const actionsEl = item.querySelector('.objective-actions');
+        const editActionsEl = item.querySelector('.objective-edit-actions');
+
+        textEl.classList.toggle('hidden', editing);
+        inputEl.classList.toggle('hidden', !editing);
+        editActionsEl.classList.toggle('hidden', !editing);
+        editActionsEl.classList.toggle('flex', editing);
+
+        if (editing) {
+            actionsEl.classList.add('opacity-0', 'pointer-events-none');
+            inputEl.focus();
+            inputEl.select();
+        } else {
+            actionsEl.classList.remove('opacity-0', 'pointer-events-none');
+        }
+    }
+
+    function setActiveObjective(objectiveId) {
+        const rows = objectivesList.querySelectorAll('[data-objective-id]');
+        rows.forEach(function(row) {
+            const isActive = row.dataset.objectiveId === objectiveId;
+            row.classList.toggle('border-primary', isActive);
+            row.classList.toggle('bg-secondary/60', isActive);
+        });
+        activeObjectiveId = objectiveId;
+    }
+
+    function generateQuestionId() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            return window.crypto.randomUUID();
+        }
+        return 'q-' + Date.now() + '-' + Math.floor(Math.random() * 1000000);
+    }
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function syncChoicesEmptyState() {
+        const hasChoices = choicesList.querySelectorAll('[data-choice-row]').length > 0;
+        emptyChoicesText.classList.toggle('hidden', hasChoices);
+    }
+
+    function enforceSingleChoiceSelection(selectedCheckbox) {
+        if (questionTypeInput.value !== 'single_choice' || !selectedCheckbox.checked) {
+            return;
+        }
+        const checkboxes = choicesList.querySelectorAll('.choice-correct-input');
+        checkboxes.forEach(function(checkbox) {
+            if (checkbox !== selectedCheckbox) {
+                checkbox.checked = false;
+            }
+        });
+    }
+
+    function getCorrectInputType() {
+        return questionTypeInput.value === 'single_choice' ? 'radio' : 'checkbox';
+    }
+
+    function applyTypeTabStyles() {
+        const tabs = [questionTypeSingleBtn, questionTypeMultipleBtn];
+        tabs.forEach(function(tab) {
+            const isActive = tab.getAttribute('data-type') === questionTypeInput.value;
+            tab.classList.toggle('bg-primary', isActive);
+            tab.classList.toggle('text-primary-foreground', isActive);
+            tab.classList.toggle('text-text', !isActive);
+            tab.classList.toggle('hover:bg-secondary/70', !isActive);
+        });
+    }
+
+    function syncChoiceInputValues() {
+        const rows = Array.from(choicesList.querySelectorAll('[data-choice-row]'));
+        let compactIndex = 0;
+        rows.forEach(function(row) {
+            const choiceInput = row.querySelector('.choice-text-input');
+            const correctInput = row.querySelector('.choice-correct-input');
+            if (!choiceInput || !correctInput) {
+                return;
+            }
+            const value = choiceInput.value.trim();
+            if (!value) {
+                correctInput.value = '';
+                return;
+            }
+            correctInput.value = String(compactIndex);
+            compactIndex += 1;
+        });
+    }
+
+    function syncCorrectInputType() {
+        const inputType = getCorrectInputType();
+        const correctInputs = choicesList.querySelectorAll('.choice-correct-input');
+        correctInputs.forEach(function(input, index) {
+            input.type = inputType;
+            input.name = inputType === 'radio' ? 'correct_choice_single' : ('correct_choice_' + index);
+            const row = input.closest('[data-choice-row]');
+            if (row) {
+                updateChoiceTypeVisual(row);
+            }
+        });
+
+        if (inputType === 'radio') {
+            let seenChecked = false;
+            correctInputs.forEach(function(input) {
+                if (input.checked && !seenChecked) {
+                    seenChecked = true;
+                    return;
+                }
+                if (input.checked && seenChecked) {
+                    input.checked = false;
+                }
+            });
+        }
+
+        choicesList.querySelectorAll('[data-choice-row]').forEach(function(choiceRow) {
+            syncChoiceVisualState(choiceRow);
+        });
+        syncChoiceInputValues();
+    }
+
+    function setQuestionType(typeValue) {
+        const previousType = questionTypeInput.value;
+        questionTypeInput.value = typeValue === 'multiple_choice' ? 'multiple_choice' : 'single_choice';
+        if (previousType === 'multiple_choice' && questionTypeInput.value === 'single_choice') {
+            const checkedInputs = Array.from(choicesList.querySelectorAll('.choice-correct-input')).filter(function(input) {
+                return input.checked;
+            });
+            checkedInputs.slice(1).forEach(function(input) {
+                input.checked = false;
+            });
+        }
+        applyTypeTabStyles();
+        syncCorrectInputType();
+        if (typeof saveQuestionDraft === 'function') saveQuestionDraft();
+    }
+
+    function updateChoiceTypeVisual(row) {
+        const indicator = row.querySelector('.choice-indicator');
+        if (!indicator) {
+            return;
+        }
+        const useCircle = questionTypeInput.value === 'single_choice';
+        indicator.classList.toggle('rounded-full', useCircle);
+        indicator.classList.toggle('rounded-md', !useCircle);
+    }
+
+    function syncChoiceVisualState(row) {
+        if (!row) {
+            return;
+        }
+        const checkbox = row.querySelector('.choice-correct-input');
+        const label = row.querySelector('.choice-correct-label');
+        const choiceMain = row.querySelector('.choice-main');
+        const indicator = row.querySelector('.choice-indicator');
+        const icon = row.querySelector('.choice-indicator-check');
+        if (!checkbox || !label || !choiceMain || !indicator || !icon) {
+            return;
+        }
+
+        const isChecked = checkbox.checked;
+        if (isChecked) {
+            choiceMain.style.backgroundColor = 'rgb(0 237 73 / 15%)';
+            choiceMain.style.borderColor = 'rgb(134 239 172 / 44%)';
+            choiceMain.style.borderWidth = '1px';
+            choiceMain.style.borderStyle = 'solid';
+            choiceMain.style.color = '';
+        } else {
+            choiceMain.style.backgroundColor = '';
+            choiceMain.style.borderColor = '';
+            choiceMain.style.borderWidth = '';
+            choiceMain.style.borderStyle = '';
+            choiceMain.style.color = '';
+        }
+        label.classList.toggle('text-green-700', isChecked);
+        label.classList.toggle('text-muted', !isChecked);
+
+        indicator.classList.toggle('bg-green-500', isChecked);
+        indicator.classList.toggle('border-green-500', isChecked);
+        indicator.classList.toggle('text-white', isChecked);
+        indicator.classList.toggle('bg-background', !isChecked);
+        indicator.classList.toggle('border-border', !isChecked);
+        indicator.classList.toggle('text-transparent', !isChecked);
+        icon.classList.toggle('opacity-100', isChecked);
+        icon.classList.toggle('opacity-0', !isChecked);
+    }
+
+    function addChoiceRow(choiceText, isCorrect) {
+        const row = document.createElement('div');
+        row.className = 'grid gap-2 grid-cols-[1fr_auto] items-center';
+        row.setAttribute('data-choice-row', 'true');
+        const correctType = getCorrectInputType();
+        const correctName = correctType === 'radio' ? 'correct_choice_single' : ('correct_choice_' + choicesList.querySelectorAll('[data-choice-row]').length);
+        row.innerHTML = [
+            '<div class="choice-main h-9 rounded-md bg-background text-text px-2.5 transition-colors flex items-center gap-2 focus-within:ring-2 focus-within:ring-primary">',
+            '<label class="choice-correct-label inline-flex items-center justify-center text-muted cursor-pointer select-none shrink-0">',
+            '<input type="' + correctType + '" name="' + correctName + '" class="choice-correct-input sr-only" ' + (isCorrect ? 'checked' : '') + '>',
+            '<span class="choice-indicator inline-flex h-4 w-4 items-center justify-center border border-border bg-background text-transparent transition-colors rounded-md">',
+            '<svg class="choice-indicator-check h-3 w-3 opacity-0 transition-opacity" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 9.2 17 19 7.5"/></svg>',
+            '</span>',
+            '</label>',
+            '<input type="text" class="choice-text-input h-8 w-full bg-transparent text-sm text-current placeholder:text-muted focus:outline-none" placeholder="Choice text" maxlength="300" value="' + escapeHtml(choiceText || '') + '">',
+            '</div>',
+            '<button type="button" class="delete-choice-btn inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-red-600 hover:bg-red-50 hover:text-red-700" title="Delete choice" aria-label="Delete choice">',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>',
+            '</button>'
+        ].join('');
+        choicesList.appendChild(row);
+
+        const checkbox = row.querySelector('.choice-correct-input');
+        const choiceInput = row.querySelector('.choice-text-input');
+        const deleteBtn = row.querySelector('.delete-choice-btn');
+        checkbox.addEventListener('change', function() {
+            enforceSingleChoiceSelection(checkbox);
+            syncChoiceVisualState(row);
+            if (questionTypeInput.value === 'single_choice') {
+                choicesList.querySelectorAll('[data-choice-row]').forEach(function(choiceRow) {
+                    syncChoiceVisualState(choiceRow);
+                });
+            }
+        });
+        choiceInput.addEventListener('input', function() {
+            syncChoiceInputValues();
+        });
+        deleteBtn.addEventListener('click', function() {
+            row.remove();
+            syncChoicesEmptyState();
+            syncCorrectInputType();
+            syncChoiceInputValues();
+            if (typeof saveQuestionDraft === 'function') saveQuestionDraft();
+        });
+
+        syncChoicesEmptyState();
+        syncCorrectInputType();
+        updateChoiceTypeVisual(row);
+        syncChoiceVisualState(row);
+        syncChoiceInputValues();
+        if (typeof saveQuestionDraft === 'function') saveQuestionDraft();
+    }
+
+    function clearQuestionFormError() {
+        questionFormError.classList.add('hidden');
+        questionFormError.textContent = '';
+    }
+
+    function setQuestionFormError(message) {
+        questionFormError.textContent = message;
+        questionFormError.classList.remove('hidden');
+    }
+
+    function openQuestionModal(mode, payload) {
+        questionEditMode = mode;
+        clearQuestionFormError();
+
+        const objectiveId = (payload && payload.objective_id) ? payload.objective_id : activeObjectiveId;
+        
+        let targetPayload = payload || {};
+        if (mode === 'create' && objectiveId) {
+            const savedDraft = localStorage.getItem('draft_question_' + objectiveId);
+            if (savedDraft) {
+                try {
+                    const parsedDraft = JSON.parse(savedDraft);
+                    targetPayload = Object.assign({}, targetPayload, parsedDraft);
+                } catch (e) {
+                    console.error('Failed to parse question draft', e);
+                }
+            }
+        }
+
+        const questionId = targetPayload.question_id ? targetPayload.question_id : generateQuestionId();
+        const text = targetPayload.text ? targetPayload.text : '';
+        const rawType = targetPayload.type ? targetPayload.type : 'single_choice';
+        const normalizedType = rawType === 'multiple' ? 'multiple_choice' : (rawType === 'single' ? 'single_choice' : rawType);
+        const points = targetPayload.points !== undefined && targetPayload.points !== null ? targetPayload.points : 100;
+        const timeLimit = targetPayload.time_limit !== undefined && targetPayload.time_limit !== null ? targetPayload.time_limit : 30;
+        const choices = Array.isArray(targetPayload.choices) ? targetPayload.choices : [];
+        const correctIndices = Array.isArray(targetPayload.correct_indices) ? targetPayload.correct_indices : [];
+
+        questionModalTitle.textContent = mode === 'update' ? 'Update Question' : 'New Question';
+        questionObjectiveId.value = objectiveId || '';
+        questionIdInput.value = questionId || '';
+        questionTextInput.value = text;
+        setQuestionType(normalizedType === 'multiple_choice' ? 'multiple_choice' : 'single_choice');
+        questionPointsInput.value = points;
+        questionTimeLimitInput.value = timeLimit;
+
+        choicesList.innerHTML = '';
+        if (choices.length) {
+            choices.forEach(function(choice, index) {
+                addChoiceRow(choice, correctIndices.includes(index));
+            });
+        } else {
+            addChoiceRow('', false);
+        }
+
+        questionModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        questionTextInput.focus();
+    }
+
+    function closeQuestionModal() {
+        questionModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        clearQuestionFormError();
+    }
+
+    function collectQuestionFormData() {
+        const rows = Array.from(choicesList.querySelectorAll('[data-choice-row]'));
+        const choices = [];
+        const correctIndices = [];
+
+        rows.forEach(function(row) {
+            const choiceInput = row.querySelector('.choice-text-input');
+            const correctCheckbox = row.querySelector('.choice-correct-input');
+            const value = choiceInput.value.trim();
+            if (!value) {
+                return;
+            }
+            choices.push(value);
+            if (correctCheckbox.checked) {
+                const parsedValue = parseInt(correctCheckbox.value, 10);
+                if (!Number.isNaN(parsedValue)) {
+                    correctIndices.push(parsedValue);
+                }
+            }
+        });
+
+        return {
+            objective_id: questionObjectiveId.value.trim(),
+            question_id: questionIdInput.value.trim(),
+            text: questionTextInput.value.trim(),
+            type: questionTypeInput.value,
+            choices: choices,
+            correct_indices: correctIndices,
+            points: questionPointsInput.value.trim(),
+            time_limit: questionTimeLimitInput.value.trim()
+        };
+    }
+
+    function validateQuestionPayloadInOrder(payload) {
+        // 1) text empty or less than 3 chars
+        if (!payload.text) {
+            return 'Question text is required.';
+        }
+        if (payload.text.length < 3) {
+            return 'Question text must be at least 3 characters.';
+        }
+
+        // 2) points zero or time less than 5 seconds
+        const pointsNumber = Number(payload.points);
+        const timeLimitNumber = Number(payload.time_limit);
+        if (!Number.isInteger(pointsNumber) || pointsNumber <= 0) {
+            return 'Points must be a positive non-zero integer.';
+        }
+        if (!Number.isInteger(timeLimitNumber) || timeLimitNumber < 5) {
+            return 'Time limit must be at least 5 seconds.';
+        }
+
+        // 3) less than two choices
+        if (payload.choices.length < 2) {
+            return 'Please provide at least two choices.';
+        }
+
+        // 4) no correct answer selected
+        if (payload.correct_indices.length < 1) {
+            return 'Please choose at least one correct answer.';
+        }
+
+        // Extra consistency for single choice type
+        if (payload.type === 'single_choice' && payload.correct_indices.length > 1) {
+            return 'For single_choice, only one correct choice is allowed.';
+        }
+
+        return '';
+    }
+
+    function renderQuestions(questions) {
+        questionsList.innerHTML = '';
+        objectiveQuestionsMap = new Map();
+        if (!questions.length) {
+            emptyQuestions.classList.remove('hidden');
+            return;
+        }
+
+        emptyQuestions.classList.add('hidden');
+        questions.forEach(function(question, index) {
+            objectiveQuestionsMap.set(question.question_id, question);
+            const card = document.createElement('div');
+            card.className = 'question-row group rounded-md border border-border bg-background/70 px-3 py-2 cursor-pointer transition-colors hover:bg-secondary/50';
+            card.setAttribute('data-question-id', question.question_id || '');
+            const pointsValue = question.points === null || question.points === undefined ? '-' : String(question.points);
+            const timeValue = question.time_limit === null || question.time_limit === undefined ? '-' : String(question.time_limit);
+            const questionText = question.text && question.text.trim() ? question.text.trim() : 'Untitled question';
+
+            card.innerHTML = [
+                '<div class="flex items-start justify-between gap-2">',
+                '<div class="flex-1 min-w-0">',
+                '<p class="text-sm text-text break-words"><span class="text-muted mr-1">' + (index + 1) + '.</span>' + questionText + '</p>',
+                '<div class="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-muted">',
+                '<span>Points: <span class="text-text">' + pointsValue + '</span></span>',
+                '<span>Time limit: <span class="text-text">' + timeValue + '</span></span>',
+                '</div>',
+                '</div>',
+                '<div class="question-actions flex items-center gap-1 opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto">',
+                '<button type="button" class="question-delete-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-red-600 hover:bg-red-50 hover:text-red-700" title="Delete" aria-label="Delete question">',
+                '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>',
+                '</button>',
+                '</div>',
+                '</div>'
+            ].join('');
+            questionsList.appendChild(card);
+        });
+    }
+
+    function setQuestionsLoading() {
+        questionPanelSubtitle.textContent = 'Loading questions...';
+        questionsList.innerHTML = '';
+        emptyQuestions.classList.add('hidden');
+    }
+
+    function setQuestionsError() {
+        questionPanelSubtitle.textContent = 'Failed to load questions.';
+        questionsList.innerHTML = '';
+        emptyQuestions.classList.remove('hidden');
+    }
+
+    function loadObjectiveQuestions(objectiveId, objectiveText) {
+        setActiveObjective(objectiveId);
+        setQuestionsLoading();
+
+        const endpoint = '/presentations/' + presentationId + '/objectives/' + objectiveId + '/questions';
+        return fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            },
+            body: new URLSearchParams({
+                csrf_token: csrfToken
+            }).toString()
+        })
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('Request failed');
+                }
+                return response.json();
+            })
+            .then(function(data) {
+                const questions = Array.isArray(data.questions) ? data.questions : [];
+                questionPanelSubtitle.textContent = objectiveText ? ('Questions for: ' + objectiveText) : 'Questions';
+                renderQuestions(questions);
+            })
+            .catch(function() {
+                setQuestionsError();
+            });
+    }
+
+    function createNewObjectiveRow() {
+        if (objectivesList.querySelector('[data-new-objective-row]')) {
+            const existingInput = objectivesList.querySelector('[data-new-objective-row] input');
+            if (existingInput) {
+                existingInput.focus();
+            }
+            return;
+        }
+
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2 rounded-md border border-border bg-background/70 px-3 py-2';
+        row.setAttribute('data-new-objective-row', 'true');
+
+        const currentCount = objectivesList.querySelectorAll('[data-objective-id]').length;
+
+        row.innerHTML = [
+            '<div class="text-xs text-muted w-6">' + (currentCount + 1) + '.</div>',
+            '<div class="flex-1 min-w-0">',
+            '<input type="text" class="new-objective-input h-8 w-full rounded-md border border-border bg-background px-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Objective title" maxlength="300">',
+            '</div>',
+            '<div class="flex items-center gap-1">',
+            '<button type="button" class="new-objective-save inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-green-700 hover:bg-green-50" title="Save" aria-label="Save objective">',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>',
+            '</button>',
+            '<button type="button" class="new-objective-cancel inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-text hover:bg-secondary/70" title="Cancel" aria-label="Cancel objective">',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
+            '</button>',
+            '</div>'
+        ].join('');
+
+        objectivesList.appendChild(row);
+        syncObjectiveEmptyState();
+
+        const input = row.querySelector('.new-objective-input');
+        const save = row.querySelector('.new-objective-save');
+        const cancel = row.querySelector('.new-objective-cancel');
+
+        input.focus();
+
+        function removeRow() {
+            row.remove();
+            syncObjectiveEmptyState();
+        }
+
+        function submitCreate() {
+            const value = input.value.trim();
+            if (!value) {
+                input.focus();
+                return;
+            }
+            createObjectiveTextInput.value = value;
+            createObjectiveForm.submit();
+        }
+
+        save.addEventListener('click', submitCreate);
+        cancel.addEventListener('click', removeRow);
+        input.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                submitCreate();
+            }
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                removeRow();
+            }
+        });
+    }
+
+    function showDeleteObjectiveModal(deleteUrl) {
+        deleteObjectiveForm.action = deleteUrl;
+        deleteObjectiveModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeDeleteObjectiveModal() {
+        deleteObjectiveModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    function showDeleteQuestionModal(deleteUrl) {
+        deleteQuestionForm.action = deleteUrl;
+        deleteQuestionModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeDeleteQuestionModal() {
+        deleteQuestionModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    window.closeDeleteObjectiveModal = closeDeleteObjectiveModal;
+    window.confirmDeleteObjective = function() {
+        deleteObjectiveForm.submit();
+    };
+    window.closeDeleteQuestionModal = closeDeleteQuestionModal;
+    window.confirmDeleteQuestion = function() {
+        deleteQuestionForm.submit();
+    };
+
+    editBtn.addEventListener('click', function() {
+        setEditing(true);
+    });
+
+    cancelBtn.addEventListener('click', function() {
+        titleText.textContent = initial.title || 'Untitled';
+        descriptionText.textContent = initial.description || emptyDescriptionText;
+        statusSelect.value = initial.status;
+        renderStatusBadge(initial.status);
+        setEditing(false);
+    });
+
+    saveBtn.addEventListener('click', function() {
+        const titleValue = titleText.textContent.trim() || 'Untitled';
+        const descriptionValue = descriptionText.textContent.trim() === emptyDescriptionText ? '' : descriptionText.textContent.trim();
+        const statusValue = statusSelect.value;
+
+        titleInput.value = titleValue;
+        descriptionInput.value = descriptionValue;
+        statusInput.value = statusValue;
+        saveForm.submit();
+    });
+
+    newObjectiveBtn.addEventListener('click', createNewObjectiveRow);
+
+    objectivesList.addEventListener('click', function(event) {
+        const item = event.target.closest('[data-objective-id]');
+        if (!item) {
+            return;
+        }
+
+        const objectiveId = item.dataset.objectiveId;
+        const input = item.querySelector('.objective-edit-input');
+        const textEl = item.querySelector('.objective-text');
+
+        if (event.target.closest('.objective-edit-btn')) {
+            input.value = textEl.textContent.trim();
+            setObjectiveEditingState(item, true);
+            return;
+        }
+
+        if (event.target.closest('.objective-cancel-btn')) {
+            input.value = textEl.textContent.trim();
+            setObjectiveEditingState(item, false);
+            return;
+        }
+
+        if (event.target.closest('.objective-save-btn')) {
+            const value = input.value.trim();
+            if (!value) {
+                input.focus();
+                return;
+            }
+            updateObjectiveTextInput.value = value;
+            updateObjectiveForm.action = '/presentations/{{ presentation.id }}/objectives/' + objectiveId + '/update';
+            updateObjectiveForm.submit();
+            return;
+        }
+
+        if (event.target.closest('.objective-delete-btn')) {
+            showDeleteObjectiveModal('/presentations/{{ presentation.id }}/objectives/' + objectiveId + '/delete');
+            return;
+        }
+
+        if (
+            !event.target.closest('.objective-edit-input') &&
+            !event.target.closest('.objective-actions') &&
+            !event.target.closest('.objective-edit-actions')
+        ) {
+            const objectiveText = (item.dataset.objectiveText || '').trim();
+            loadObjectiveQuestions(objectiveId, objectiveText);
+        }
+    });
+
+    objectivesList.addEventListener('keydown', function(event) {
+        const item = event.target.closest('[data-objective-id]');
+        if (!item || !event.target.classList.contains('objective-edit-input')) {
+            return;
+        }
+
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const saveBtn = item.querySelector('.objective-save-btn');
+            if (saveBtn) {
+                saveBtn.click();
+            }
+        }
+
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            const cancelBtn = item.querySelector('.objective-cancel-btn');
+            if (cancelBtn) {
+                cancelBtn.click();
+            }
+        }
+    });
+
+    deleteObjectiveModal.addEventListener('click', function(event) {
+        if (event.target === deleteObjectiveModal) {
+            closeDeleteObjectiveModal();
+        }
+    });
+
+    deleteQuestionModal.addEventListener('click', function(event) {
+        if (event.target === deleteQuestionModal) {
+            closeDeleteQuestionModal();
+        }
+    });
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && !deleteObjectiveModal.classList.contains('hidden')) {
+            closeDeleteObjectiveModal();
+            return;
+        }
+        if (event.key === 'Escape' && !deleteQuestionModal.classList.contains('hidden')) {
+            closeDeleteQuestionModal();
+            return;
+        }
+        if (event.key === 'Escape' && !questionModal.classList.contains('hidden')) {
+            closeQuestionModal();
+        }
+    });
+
+    addChoiceBtn.addEventListener('click', function() {
+        addChoiceRow('', false);
+    });
+
+    [questionTypeSingleBtn, questionTypeMultipleBtn].forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            setQuestionType(tab.getAttribute('data-type'));
+        });
+    });
+
+    newQuestionBtn.addEventListener('click', function() {
+        if (!activeObjectiveId) {
+            return;
+        }
+        openQuestionModal('create', {
+            objective_id: activeObjectiveId
+        });
+    });
+
+    closeQuestionModalBtn.addEventListener('click', closeQuestionModal);
+    cancelQuestionBtn.addEventListener('click', closeQuestionModal);
+    questionModal.addEventListener('click', function(event) {
+        if (event.target === questionModal) {
+            closeQuestionModal();
+        }
+    });
+
+    questionsList.addEventListener('click', function(event) {
+        const row = event.target.closest('[data-question-id]');
+        if (!row) {
+            return;
+        }
+        const questionId = row.getAttribute('data-question-id');
+        if (!questionId || !objectiveQuestionsMap.has(questionId) || !activeObjectiveId) {
+            return;
+        }
+
+        if (event.target.closest('.question-delete-btn')) {
+            showDeleteQuestionModal('/presentations/{{ presentation.id }}/objectives/' + activeObjectiveId + '/questions/' + questionId + '/delete');
+            return;
+        }
+
+        const question = objectiveQuestionsMap.get(questionId);
+        openQuestionModal('update', {
+            objective_id: activeObjectiveId,
+            question_id: question.question_id,
+            text: question.text,
+            type: question.type,
+            choices: Array.isArray(question.choices) ? question.choices : [],
+            correct_indices: Array.isArray(question.correct_indices) ? question.correct_indices : [],
+            points: question.points,
+            time_limit: question.time_limit
+        });
+    });
+
+    questionForm.addEventListener('input', function() {
+        if (typeof saveQuestionDraft === 'function') saveQuestionDraft();
+    });
+    questionForm.addEventListener('change', function() {
+        if (typeof saveQuestionDraft === 'function') saveQuestionDraft();
+    });
+
+    questionForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        clearQuestionFormError();
+
+        const payload = collectQuestionFormData();
+
+        if (!payload.objective_id) {
+            setQuestionFormError('Objective ID is required.');
+            return;
+        }
+        if (!payload.question_id) {
+            setQuestionFormError('Question ID is required.');
+            return;
+        }
+        const validationError = validateQuestionPayloadInOrder(payload);
+        if (validationError) {
+            setQuestionFormError(validationError);
+            return;
+        }
+
+        saveQuestionBtn.disabled = true;
+        const endpoint = '/presentations/' + presentationId + '/objectives/' + payload.objective_id + '/questions/save';
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            },
+            body: new URLSearchParams({
+                csrf_token: csrfToken,
+                objective_id: payload.objective_id,
+                question_id: payload.question_id,
+                text: payload.text,
+                type: payload.type,
+                choices_json: JSON.stringify(payload.choices),
+                correct_indices_json: JSON.stringify(payload.correct_indices),
+                points: payload.points,
+                time_limit: payload.time_limit
+            }).toString()
+        })
+            .then(function(response) {
+                return response.json().then(function(data) {
+                    return { status: response.status, data: data };
+                });
+            })
+            .then(function(result) {
+                if (result.status < 200 || result.status >= 300) {
+                    throw new Error(result.data && result.data.error ? result.data.error : 'Failed to save question.');
+                }
+                if (questionEditMode === 'create' && payload.objective_id) {
+                    localStorage.removeItem('draft_question_' + payload.objective_id);
+                }
+                closeQuestionModal();
+                const row = document.querySelector('[data-objective-id=\"' + payload.objective_id + '\"]');
+                const objectiveText = row && row.dataset ? (row.dataset.objectiveText || '').trim() : '';
+                return loadObjectiveQuestions(payload.objective_id, objectiveText);
+            })
+            .catch(function(error) {
+                setQuestionFormError(error.message || 'Failed to save question.');
+            })
+            .finally(function() {
+                saveQuestionBtn.disabled = false;
+            });
+    });
+
+    syncObjectiveEmptyState();
+    const firstObjective = objectivesList.querySelector('[data-objective-id]');
+    if (firstObjective) {
+        loadObjectiveQuestions(firstObjective.dataset.objectiveId, (firstObjective.dataset.objectiveText || '').trim());
+    } else {
+        questionPanelSubtitle.textContent = 'Select an objective to view questions.';
+        renderQuestions([]);
+    }
+})();
+</script>
+{% endblock %}
