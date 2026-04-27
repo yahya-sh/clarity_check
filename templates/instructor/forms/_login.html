@@ -1,4 +1,4 @@
-<form method="POST" action="/login" novalidate class="space-y-5">
+<form method="POST" action="{{ url_for('auth.login') }}" novalidate class="space-y-5">
   {{ form.csrf_token }}
 
   <!-- Username Field -->

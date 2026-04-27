@@ -1,6 +1,6 @@
 from forms.register import RegisterForm
 from forms.login import LoginForm
-from flask import Blueprint, render_template, redirect, flash, session
+from flask import Blueprint, render_template, redirect, flash, session, url_for
 from repositories import users_repo
 
 
@@ -18,7 +18,7 @@ def login():
             session['username'] = username
             session.permanent = True
             flash('Login successful!', 'success')
-            return redirect('/dashboard')
+            return redirect(url_for('instructor.dashboard'))
         else:
             flash('Invalid username or password', 'error')
     return render_template('instructor/login.html', form=form)
@@ -34,7 +34,7 @@ def register():
             
             if saved_user:
                 flash('Registration successful! You can now log in.', 'success')
-                return redirect('/login')
+                return redirect(url_for('auth.login'))
             else:
                 flash('Username is already taken. Please choose another one.', 'error')
                 return render_template('instructor/register.html', form=form)

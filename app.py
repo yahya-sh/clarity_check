@@ -1,5 +1,5 @@
 from flask_wtf.csrf import CSRFProtect
-from flask import Flask, redirect, flash, session, g
+from flask import Flask, redirect, flash, session, g, url_for
 from functools import wraps
 import os
 from datetime import timedelta
@@ -21,7 +21,7 @@ def require_instructor(f):
         username = session.get('username')
         if not username:
             flash('Please log in to access this page', 'info')
-            return redirect('/login')
+            return redirect(url_for('auth.login'))
         
         # Verify user still exists in the database
         user = users_repo.get_user(username)
@@ -29,7 +29,7 @@ def require_instructor(f):
             g.user= None
             session.clear()
             flash('User not found. Please log in again.', 'info')
-            return redirect('/login')
+            return redirect(url_for('auth.login'))
             
         return f(*args, **kwargs)
     return decorated_function
