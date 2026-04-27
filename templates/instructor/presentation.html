@@ -565,10 +565,16 @@
 
         const isChecked = checkbox.checked;
         if (isChecked) {
-            choiceMain.style.backgroundColor = 'rgba(22, 163, 74, 0.6)';
-            choiceMain.style.color = '#ffffff';
+            choiceMain.style.backgroundColor = 'rgb(0 237 73 / 15%)';
+            choiceMain.style.borderColor = 'rgb(134 239 172 / 44%)';
+            choiceMain.style.borderWidth = '1px';
+            choiceMain.style.borderStyle = 'solid';
+            choiceMain.style.color = '';
         } else {
             choiceMain.style.backgroundColor = '';
+            choiceMain.style.borderColor = '';
+            choiceMain.style.borderWidth = '';
+            choiceMain.style.borderStyle = '';
             choiceMain.style.color = '';
         }
         label.classList.toggle('text-green-700', isChecked);

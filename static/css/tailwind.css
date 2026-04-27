@@ -729,6 +729,9 @@
     --tw-border-style: dashed;
     border-style: dashed;
   }
+  .border-\[rgb\(134_239_172\)\] {
+    border-color: rgb(134 239 172);
+  }
   .border-accent\/20 {
     border-color: color-mix(in srgb, #6366f1 20%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -758,6 +761,9 @@
   }
   .border-red-600 {
     border-color: var(--color-red-600);
+  }
+  .bg-\[rgba\(240_253_244\)\] {
+    background-color: rgba(240 253 244);
   }
   .bg-accent {
     background-color: var(--color-accent);
