@@ -169,6 +169,77 @@
     </div>
 </div>
 
+<div id="questionModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-3 sm:p-4">
+        <div class="bg-surface border border-border rounded-xl shadow-2xl w-full max-w-2xl p-4 sm:p-5 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="questionModalTitle" class="text-lg font-semibold text-text">New Question</h3>
+                <button type="button" id="closeQuestionModalBtn" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-text hover:bg-secondary/70" aria-label="Close question modal" title="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+            </div>
+
+            <form id="questionForm" class="space-y-3">
+                <input type="hidden" id="questionFormCsrf" value="{{ csrf_token() }}">
+                <input id="questionObjectiveId" type="hidden">
+                <input id="questionIdInput" type="hidden">
+                <input id="questionTypeInput" type="hidden" value="single_choice">
+
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-muted mb-1">Text</label>
+                    <textarea id="questionTextInput" rows="3" class="w-full rounded-md border border-border bg-background px-2.5 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Enter question text"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-muted mb-1">Type</label>
+                    <div class="inline-flex rounded-md border border-border bg-background p-0.5 w-full sm:w-auto">
+                        <button id="questionTypeSingleBtn" type="button" class="question-type-tab h-8 px-3 rounded text-sm font-medium text-text transition-colors" data-type="single_choice">
+                            Single Choice
+                        </button>
+                        <button id="questionTypeMultipleBtn" type="button" class="question-type-tab h-8 px-3 rounded text-sm font-medium text-text transition-colors" data-type="multiple_choice">
+                            Multiple Choices
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-muted mb-1">Points</label>
+                        <input id="questionPointsInput" type="number" min="1" value="100" class="h-9 w-full rounded-md border border-border bg-background px-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-muted mb-1">Time Limit (sec)</label>
+                        <input id="questionTimeLimitInput" type="number" min="1" value="30" class="h-9 w-full rounded-md border border-border bg-background px-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <label class="block text-xs uppercase tracking-wider text-muted">Choices / Correct Indices</label>
+                        <button id="addChoiceBtn" type="button" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-medium text-text transition-colors hover:bg-secondary/70">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                            Add Choice
+                        </button>
+                    </div>
+                    <div id="choicesList" class="space-y-2"></div>
+                    <p id="emptyChoicesText" class="text-xs text-muted mt-1">No choices yet. Add at least one choice.</p>
+                </div>
+
+                <div id="questionFormError" class="hidden rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"></div>
+
+                <div class="flex gap-2 pt-1">
+                    <button type="button" id="cancelQuestionBtn" class="flex-1 h-9 rounded-md border border-border bg-secondary text-text text-sm font-medium hover:bg-secondary/70">
+                        Cancel
+                    </button>
+                    <button type="submit" id="saveQuestionBtn" class="flex-1 h-9 rounded-md border border-primary bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">
+                        Save Question
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 (function() {
     const titleText = document.getElementById('titleText');
@@ -194,6 +265,24 @@
     const emptyQuestions = document.getElementById('emptyQuestions');
     const questionPanelSubtitle = document.getElementById('questionPanelSubtitle');
     const newQuestionBtn = document.getElementById('newQuestionBtn');
+    const questionModal = document.getElementById('questionModal');
+    const questionModalTitle = document.getElementById('questionModalTitle');
+    const closeQuestionModalBtn = document.getElementById('closeQuestionModalBtn');
+    const questionForm = document.getElementById('questionForm');
+    const questionFormError = document.getElementById('questionFormError');
+    const questionObjectiveId = document.getElementById('questionObjectiveId');
+    const questionIdInput = document.getElementById('questionIdInput');
+    const questionTextInput = document.getElementById('questionTextInput');
+    const questionTypeInput = document.getElementById('questionTypeInput');
+    const questionTypeSingleBtn = document.getElementById('questionTypeSingleBtn');
+    const questionTypeMultipleBtn = document.getElementById('questionTypeMultipleBtn');
+    const questionPointsInput = document.getElementById('questionPointsInput');
+    const questionTimeLimitInput = document.getElementById('questionTimeLimitInput');
+    const addChoiceBtn = document.getElementById('addChoiceBtn');
+    const choicesList = document.getElementById('choicesList');
+    const emptyChoicesText = document.getElementById('emptyChoicesText');
+    const cancelQuestionBtn = document.getElementById('cancelQuestionBtn');
+    const saveQuestionBtn = document.getElementById('saveQuestionBtn');
 
     const deleteObjectiveModal = document.getElementById('deleteObjectiveModal');
     const deleteObjectiveForm = document.getElementById('deleteObjectiveForm');
@@ -202,6 +291,8 @@
 
     const emptyDescriptionText = '';
     let activeObjectiveId = null;
+    let questionEditMode = 'create';
+    let objectiveQuestionsMap = new Map();
     let initial = {
         title: titleText.textContent.trim(),
         description: descriptionText.textContent.trim() === emptyDescriptionText ? '' : descriptionText.textContent.trim(),
@@ -288,8 +379,339 @@
         activeObjectiveId = objectiveId;
     }
 
+    function generateQuestionId() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            return window.crypto.randomUUID();
+        }
+        return 'q-' + Date.now() + '-' + Math.floor(Math.random() * 1000000);
+    }
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function syncChoicesEmptyState() {
+        const hasChoices = choicesList.querySelectorAll('[data-choice-row]').length > 0;
+        emptyChoicesText.classList.toggle('hidden', hasChoices);
+    }
+
+    function enforceSingleChoiceSelection(selectedCheckbox) {
+        if (questionTypeInput.value !== 'single_choice' || !selectedCheckbox.checked) {
+            return;
+        }
+        const checkboxes = choicesList.querySelectorAll('.choice-correct-input');
+        checkboxes.forEach(function(checkbox) {
+            if (checkbox !== selectedCheckbox) {
+                checkbox.checked = false;
+            }
+        });
+    }
+
+    function getCorrectInputType() {
+        return questionTypeInput.value === 'single_choice' ? 'radio' : 'checkbox';
+    }
+
+    function applyTypeTabStyles() {
+        const tabs = [questionTypeSingleBtn, questionTypeMultipleBtn];
+        tabs.forEach(function(tab) {
+            const isActive = tab.getAttribute('data-type') === questionTypeInput.value;
+            tab.classList.toggle('bg-primary', isActive);
+            tab.classList.toggle('text-primary-foreground', isActive);
+            tab.classList.toggle('text-text', !isActive);
+            tab.classList.toggle('hover:bg-secondary/70', !isActive);
+        });
+    }
+
+    function syncChoiceInputValues() {
+        const rows = Array.from(choicesList.querySelectorAll('[data-choice-row]'));
+        let compactIndex = 0;
+        rows.forEach(function(row) {
+            const choiceInput = row.querySelector('.choice-text-input');
+            const correctInput = row.querySelector('.choice-correct-input');
+            if (!choiceInput || !correctInput) {
+                return;
+            }
+            const value = choiceInput.value.trim();
+            if (!value) {
+                correctInput.value = '';
+                return;
+            }
+            correctInput.value = String(compactIndex);
+            compactIndex += 1;
+        });
+    }
+
+    function syncCorrectInputType() {
+        const inputType = getCorrectInputType();
+        const correctInputs = choicesList.querySelectorAll('.choice-correct-input');
+        correctInputs.forEach(function(input, index) {
+            input.type = inputType;
+            input.name = inputType === 'radio' ? 'correct_choice_single' : ('correct_choice_' + index);
+            const row = input.closest('[data-choice-row]');
+            if (row) {
+                updateChoiceTypeVisual(row);
+            }
+        });
+
+        if (inputType === 'radio') {
+            let seenChecked = false;
+            correctInputs.forEach(function(input) {
+                if (input.checked && !seenChecked) {
+                    seenChecked = true;
+                    return;
+                }
+                if (input.checked && seenChecked) {
+                    input.checked = false;
+                }
+            });
+        }
+
+        choicesList.querySelectorAll('[data-choice-row]').forEach(function(choiceRow) {
+            syncChoiceVisualState(choiceRow);
+        });
+        syncChoiceInputValues();
+    }
+
+    function setQuestionType(typeValue) {
+        const previousType = questionTypeInput.value;
+        questionTypeInput.value = typeValue === 'multiple_choice' ? 'multiple_choice' : 'single_choice';
+        if (previousType === 'multiple_choice' && questionTypeInput.value === 'single_choice') {
+            const checkedInputs = Array.from(choicesList.querySelectorAll('.choice-correct-input')).filter(function(input) {
+                return input.checked;
+            });
+            checkedInputs.slice(1).forEach(function(input) {
+                input.checked = false;
+            });
+        }
+        applyTypeTabStyles();
+        syncCorrectInputType();
+    }
+
+    function updateChoiceTypeVisual(row) {
+        const indicator = row.querySelector('.choice-indicator');
+        if (!indicator) {
+            return;
+        }
+        const useCircle = questionTypeInput.value === 'single_choice';
+        indicator.classList.toggle('rounded-full', useCircle);
+        indicator.classList.toggle('rounded-md', !useCircle);
+    }
+
+    function syncChoiceVisualState(row) {
+        if (!row) {
+            return;
+        }
+        const checkbox = row.querySelector('.choice-correct-input');
+        const label = row.querySelector('.choice-correct-label');
+        const choiceMain = row.querySelector('.choice-main');
+        const indicator = row.querySelector('.choice-indicator');
+        const icon = row.querySelector('.choice-indicator-check');
+        if (!checkbox || !label || !choiceMain || !indicator || !icon) {
+            return;
+        }
+
+        const isChecked = checkbox.checked;
+        if (isChecked) {
+            choiceMain.style.backgroundColor = 'rgba(22, 163, 74, 0.6)';
+            choiceMain.style.color = '#ffffff';
+        } else {
+            choiceMain.style.backgroundColor = '';
+            choiceMain.style.color = '';
+        }
+        label.classList.toggle('text-green-700', isChecked);
+        label.classList.toggle('text-muted', !isChecked);
+
+        indicator.classList.toggle('bg-green-500', isChecked);
+        indicator.classList.toggle('border-green-500', isChecked);
+        indicator.classList.toggle('text-white', isChecked);
+        indicator.classList.toggle('bg-background', !isChecked);
+        indicator.classList.toggle('border-border', !isChecked);
+        indicator.classList.toggle('text-transparent', !isChecked);
+        icon.classList.toggle('opacity-100', isChecked);
+        icon.classList.toggle('opacity-0', !isChecked);
+    }
+
+    function addChoiceRow(choiceText, isCorrect) {
+        const row = document.createElement('div');
+        row.className = 'grid gap-2 grid-cols-[1fr_auto] items-center';
+        row.setAttribute('data-choice-row', 'true');
+        const correctType = getCorrectInputType();
+        const correctName = correctType === 'radio' ? 'correct_choice_single' : ('correct_choice_' + choicesList.querySelectorAll('[data-choice-row]').length);
+        row.innerHTML = [
+            '<div class="choice-main h-9 rounded-md bg-background text-text px-2.5 transition-colors flex items-center gap-2 focus-within:ring-2 focus-within:ring-primary">',
+            '<label class="choice-correct-label inline-flex items-center justify-center text-muted cursor-pointer select-none shrink-0">',
+            '<input type="' + correctType + '" name="' + correctName + '" class="choice-correct-input sr-only" ' + (isCorrect ? 'checked' : '') + '>',
+            '<span class="choice-indicator inline-flex h-4 w-4 items-center justify-center border border-border bg-background text-transparent transition-colors rounded-md">',
+            '<svg class="choice-indicator-check h-3 w-3 opacity-0 transition-opacity" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 9.2 17 19 7.5"/></svg>',
+            '</span>',
+            '</label>',
+            '<input type="text" class="choice-text-input h-8 w-full bg-transparent text-sm text-current placeholder:text-muted focus:outline-none" placeholder="Choice text" maxlength="300" value="' + escapeHtml(choiceText || '') + '">',
+            '</div>',
+            '<button type="button" class="delete-choice-btn inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-red-600 hover:bg-red-50 hover:text-red-700" title="Delete choice" aria-label="Delete choice">',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>',
+            '</button>'
+        ].join('');
+        choicesList.appendChild(row);
+
+        const checkbox = row.querySelector('.choice-correct-input');
+        const choiceInput = row.querySelector('.choice-text-input');
+        const deleteBtn = row.querySelector('.delete-choice-btn');
+        checkbox.addEventListener('change', function() {
+            enforceSingleChoiceSelection(checkbox);
+            syncChoiceVisualState(row);
+            if (questionTypeInput.value === 'single_choice') {
+                choicesList.querySelectorAll('[data-choice-row]').forEach(function(choiceRow) {
+                    syncChoiceVisualState(choiceRow);
+                });
+            }
+        });
+        choiceInput.addEventListener('input', function() {
+            syncChoiceInputValues();
+        });
+        deleteBtn.addEventListener('click', function() {
+            row.remove();
+            syncChoicesEmptyState();
+            syncCorrectInputType();
+            syncChoiceInputValues();
+        });
+
+        syncChoicesEmptyState();
+        syncCorrectInputType();
+        updateChoiceTypeVisual(row);
+        syncChoiceVisualState(row);
+        syncChoiceInputValues();
+    }
+
+    function clearQuestionFormError() {
+        questionFormError.classList.add('hidden');
+        questionFormError.textContent = '';
+    }
+
+    function setQuestionFormError(message) {
+        questionFormError.textContent = message;
+        questionFormError.classList.remove('hidden');
+    }
+
+    function openQuestionModal(mode, payload) {
+        questionEditMode = mode;
+        clearQuestionFormError();
+
+        const objectiveId = (payload && payload.objective_id) ? payload.objective_id : activeObjectiveId;
+        const questionId = (payload && payload.question_id) ? payload.question_id : generateQuestionId();
+        const text = (payload && payload.text) ? payload.text : '';
+        const rawType = (payload && payload.type) ? payload.type : 'single_choice';
+        const normalizedType = rawType === 'multiple' ? 'multiple_choice' : (rawType === 'single' ? 'single_choice' : rawType);
+        const points = payload && payload.points !== undefined && payload.points !== null ? payload.points : 100;
+        const timeLimit = payload && payload.time_limit !== undefined && payload.time_limit !== null ? payload.time_limit : 30;
+        const choices = payload && Array.isArray(payload.choices) ? payload.choices : [];
+        const correctIndices = payload && Array.isArray(payload.correct_indices) ? payload.correct_indices : [];
+
+        questionModalTitle.textContent = mode === 'update' ? 'Update Question' : 'New Question';
+        questionObjectiveId.value = objectiveId || '';
+        questionIdInput.value = questionId || '';
+        questionTextInput.value = text;
+        setQuestionType(normalizedType === 'multiple_choice' ? 'multiple_choice' : 'single_choice');
+        questionPointsInput.value = points;
+        questionTimeLimitInput.value = timeLimit;
+
+        choicesList.innerHTML = '';
+        if (choices.length) {
+            choices.forEach(function(choice, index) {
+                addChoiceRow(choice, correctIndices.includes(index));
+            });
+        } else {
+            addChoiceRow('', false);
+        }
+
+        questionModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        questionTextInput.focus();
+    }
+
+    function closeQuestionModal() {
+        questionModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        clearQuestionFormError();
+    }
+
+    function collectQuestionFormData() {
+        const rows = Array.from(choicesList.querySelectorAll('[data-choice-row]'));
+        const choices = [];
+        const correctIndices = [];
+
+        rows.forEach(function(row) {
+            const choiceInput = row.querySelector('.choice-text-input');
+            const correctCheckbox = row.querySelector('.choice-correct-input');
+            const value = choiceInput.value.trim();
+            if (!value) {
+                return;
+            }
+            choices.push(value);
+            if (correctCheckbox.checked) {
+                const parsedValue = parseInt(correctCheckbox.value, 10);
+                if (!Number.isNaN(parsedValue)) {
+                    correctIndices.push(parsedValue);
+                }
+            }
+        });
+
+        return {
+            objective_id: questionObjectiveId.value.trim(),
+            question_id: questionIdInput.value.trim(),
+            text: questionTextInput.value.trim(),
+            type: questionTypeInput.value,
+            choices: choices,
+            correct_indices: correctIndices,
+            points: questionPointsInput.value.trim(),
+            time_limit: questionTimeLimitInput.value.trim()
+        };
+    }
+
+    function validateQuestionPayloadInOrder(payload) {
+        // 1) text empty or less than 3 chars
+        if (!payload.text) {
+            return 'Question text is required.';
+        }
+        if (payload.text.length < 3) {
+            return 'Question text must be at least 3 characters.';
+        }
+
+        // 2) points zero or time less than 5 seconds
+        const pointsNumber = Number(payload.points);
+        const timeLimitNumber = Number(payload.time_limit);
+        if (!Number.isInteger(pointsNumber) || pointsNumber <= 0) {
+            return 'Points must be a positive non-zero integer.';
+        }
+        if (!Number.isInteger(timeLimitNumber) || timeLimitNumber < 5) {
+            return 'Time limit must be at least 5 seconds.';
+        }
+
+        // 3) less than two choices
+        if (payload.choices.length < 2) {
+            return 'Please provide at least two choices.';
+        }
+
+        // 4) no correct answer selected
+        if (payload.correct_indices.length < 1) {
+            return 'Please choose at least one correct answer.';
+        }
+
+        // Extra consistency for single choice type
+        if (payload.type === 'single_choice' && payload.correct_indices.length > 1) {
+            return 'For single_choice, only one correct choice is allowed.';
+        }
+
+        return '';
+    }
+
     function renderQuestions(questions) {
         questionsList.innerHTML = '';
+        objectiveQuestionsMap = new Map();
         if (!questions.length) {
             emptyQuestions.classList.remove('hidden');
             return;
@@ -297,8 +719,10 @@
 
         emptyQuestions.classList.add('hidden');
         questions.forEach(function(question, index) {
+            objectiveQuestionsMap.set(question.question_id, question);
             const card = document.createElement('div');
-            card.className = 'rounded-md border border-border bg-background/70 px-3 py-2';
+            card.className = 'question-row rounded-md border border-border bg-background/70 px-3 py-2 cursor-pointer transition-colors hover:bg-secondary/50';
+            card.setAttribute('data-question-id', question.question_id || '');
             const pointsValue = question.points === null || question.points === undefined ? '-' : String(question.points);
             const timeValue = question.time_limit === null || question.time_limit === undefined ? '-' : String(question.time_limit);
             const questionText = question.text && question.text.trim() ? question.text.trim() : 'Untitled question';
@@ -546,11 +970,121 @@
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape' && !deleteObjectiveModal.classList.contains('hidden')) {
             closeDeleteObjectiveModal();
+            return;
+        }
+        if (event.key === 'Escape' && !questionModal.classList.contains('hidden')) {
+            closeQuestionModal();
         }
     });
 
+    addChoiceBtn.addEventListener('click', function() {
+        addChoiceRow('', false);
+    });
+
+    [questionTypeSingleBtn, questionTypeMultipleBtn].forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            setQuestionType(tab.getAttribute('data-type'));
+        });
+    });
+
     newQuestionBtn.addEventListener('click', function() {
-        // Placeholder by request: button is present but has no action yet.
+        if (!activeObjectiveId) {
+            return;
+        }
+        openQuestionModal('create', {
+            objective_id: activeObjectiveId
+        });
+    });
+
+    closeQuestionModalBtn.addEventListener('click', closeQuestionModal);
+    cancelQuestionBtn.addEventListener('click', closeQuestionModal);
+    questionModal.addEventListener('click', function(event) {
+        if (event.target === questionModal) {
+            closeQuestionModal();
+        }
+    });
+
+    questionsList.addEventListener('click', function(event) {
+        const row = event.target.closest('[data-question-id]');
+        if (!row) {
+            return;
+        }
+        const questionId = row.getAttribute('data-question-id');
+        if (!questionId || !objectiveQuestionsMap.has(questionId) || !activeObjectiveId) {
+            return;
+        }
+        const question = objectiveQuestionsMap.get(questionId);
+        openQuestionModal('update', {
+            objective_id: activeObjectiveId,
+            question_id: question.question_id,
+            text: question.text,
+            type: question.type,
+            choices: Array.isArray(question.choices) ? question.choices : [],
+            correct_indices: Array.isArray(question.correct_indices) ? question.correct_indices : [],
+            points: question.points,
+            time_limit: question.time_limit
+        });
+    });
+
+    questionForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        clearQuestionFormError();
+
+        const payload = collectQuestionFormData();
+
+        if (!payload.objective_id) {
+            setQuestionFormError('Objective ID is required.');
+            return;
+        }
+        if (!payload.question_id) {
+            setQuestionFormError('Question ID is required.');
+            return;
+        }
+        const validationError = validateQuestionPayloadInOrder(payload);
+        if (validationError) {
+            setQuestionFormError(validationError);
+            return;
+        }
+
+        saveQuestionBtn.disabled = true;
+        const endpoint = '/presentations/' + presentationId + '/objectives/' + payload.objective_id + '/questions/save';
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            },
+            body: new URLSearchParams({
+                csrf_token: csrfToken,
+                objective_id: payload.objective_id,
+                question_id: payload.question_id,
+                text: payload.text,
+                type: payload.type,
+                choices_json: JSON.stringify(payload.choices),
+                correct_indices_json: JSON.stringify(payload.correct_indices),
+                points: payload.points,
+                time_limit: payload.time_limit
+            }).toString()
+        })
+            .then(function(response) {
+                return response.json().then(function(data) {
+                    return { status: response.status, data: data };
+                });
+            })
+            .then(function(result) {
+                if (result.status < 200 || result.status >= 300) {
+                    throw new Error(result.data && result.data.error ? result.data.error : 'Failed to save question.');
+                }
+                closeQuestionModal();
+                const row = document.querySelector('[data-objective-id=\"' + payload.objective_id + '\"]');
+                const objectiveText = row && row.dataset ? (row.dataset.objectiveText || '').trim() : '';
+                return loadObjectiveQuestions(payload.objective_id, objectiveText);
+            })
+            .catch(function(error) {
+                setQuestionFormError(error.message || 'Failed to save question.');
+            })
+            .finally(function() {
+                saveQuestionBtn.disabled = false;
+            });
     });
 
     syncObjectiveEmptyState();
