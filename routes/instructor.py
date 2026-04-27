@@ -7,20 +7,8 @@ from datetime import datetime, timedelta
 import qrcode
 import io
 import base64
-from repositories import users_repo
-from repositories.presentations import (
-    get_user_presentations,
-    save_presentation,
-    delete_presentation,
-    load_presentation,
-)
-from repositories.runs import (
-    save_run_data,
-    load_run_data,
-    delete_run_data,
-    pin_exists_for_user,
-    cleanup_expired_runs,
-)
+from repositories import users_repo, runs_repo, presentations_repo
+
 from forms.question import SaveQuestionForm
 from models.presentation import Presentation
 
@@ -37,10 +25,10 @@ def get_or_create_pin(presentation):
     now = datetime.now()
     
     # Cleanup expired runs first
-    cleanup_expired_runs(username)
+    runs_repo.cleanup_expired_runs(username)
     
     # Check if run already exists for this presentation
-    run_data = load_run_data(username, presentation_uuid)
+    run_data = runs_repo.load_run_data(username, presentation_uuid)
     if run_data:
         try:
             expires_at = datetime.fromisoformat(run_data.get('expires_at'))
@@ -54,7 +42,7 @@ def get_or_create_pin(presentation):
     expires_at = now + timedelta(minutes=30)
     
     # Save run data
-    save_run_data(username, presentation_uuid, pin, expires_at)
+    runs_repo.save_run_data(username, presentation_uuid, pin, expires_at)
     
     return pin
 
@@ -65,7 +53,7 @@ def generate_unique_pin(username):
     
     while attempts < max_attempts:
         pin = generate_pin_code()
-        if not pin_exists_for_user(username, pin):
+        if not runs_repo.pin_exists_for_user(username, pin):
             return pin
         attempts += 1
     
@@ -111,7 +99,7 @@ def require_instructor(f):
 @require_instructor
 def dashboard():
     username = session.get('username')
-    presentations = get_user_presentations(username)
+    presentations = presentations_repo.get_user_presentations(username)
     return render_template('instructor/dashboard.html', presentations=presentations)
 
 @routes.route('/presentations/new', methods=['GET'])
@@ -124,7 +112,7 @@ def create_presentation():
         username=username,
         status='draft'
     )
-    save_presentation(presentation)
+    presentations_repo.save_presentation(presentation)
     return redirect(url_for('instructor.presentation_page', presentation_id=presentation.id, edit='true'))
 
 
@@ -133,7 +121,7 @@ def create_presentation():
 def presentation_page(presentation_id):
     username = session.get('username')
     try:
-        presentation = load_presentation(username, presentation_id)
+        presentation = presentations_repo.load_presentation(username, presentation_id)
     except (FileNotFoundError, KeyError, ValueError):
         flash('Presentation not found.', 'error')
         return redirect(url_for('instructor.dashboard'))
@@ -166,7 +154,7 @@ def presentation_page(presentation_id):
         if status_changed:
             flash(message, 'warning')
         
-        save_presentation(presentation)
+        presentations_repo.save_presentation(presentation)
         flash('Presentation saved successfully.', 'success')
         return redirect(url_for('instructor.presentation_page', presentation_id=presentation.id))
 
@@ -180,7 +168,7 @@ def presentation_page(presentation_id):
 def create_objective_route(presentation_id):
     username = session.get('username')
     try:
-        presentation = load_presentation(username, presentation_id)
+        presentation = presentations_repo.load_presentation(username, presentation_id)
     except (FileNotFoundError, KeyError, ValueError):
         flash('Presentation not found.', 'error')
         return redirect(url_for('instructor.dashboard'))
@@ -206,7 +194,7 @@ def create_objective_route(presentation_id):
     if status_changed:
         flash(message, 'warning')
     
-    save_presentation(presentation)
+    presentations_repo.save_presentation(presentation)
     flash('Objective created successfully.', 'success')
     return redirect(url_for('instructor.presentation_page', presentation_id=presentation.id))
 
@@ -216,7 +204,7 @@ def create_objective_route(presentation_id):
 def update_objective_route(presentation_id, objective_id):
     username = session.get('username')
     try:
-        presentation = load_presentation(username, presentation_id)
+        presentation = presentations_repo.load_presentation(username, presentation_id)
     except (FileNotFoundError, KeyError, ValueError):
         flash('Presentation not found.', 'error')
         return redirect(url_for('instructor.dashboard'))
@@ -246,7 +234,7 @@ def update_objective_route(presentation_id, objective_id):
     if status_changed:
         flash(message, 'warning')
     
-    save_presentation(presentation)
+    presentations_repo.save_presentation(presentation)
     flash('Objective updated successfully.', 'success')
     return redirect(url_for('instructor.presentation_page', presentation_id=presentation.id))
 
@@ -256,7 +244,7 @@ def update_objective_route(presentation_id, objective_id):
 def delete_objective_route(presentation_id, objective_id):
     username = session.get('username')
     try:
-        presentation = load_presentation(username, presentation_id)
+        presentation = presentations_repo.load_presentation(username, presentation_id)
     except (FileNotFoundError, KeyError, ValueError):
         flash('Presentation not found.', 'error')
         return redirect(url_for('instructor.dashboard'))
@@ -278,7 +266,7 @@ def delete_objective_route(presentation_id, objective_id):
     if status_changed:
         flash(message, 'warning')
     
-    save_presentation(presentation)
+    presentations_repo.save_presentation(presentation)
     flash('Objective deleted successfully.', 'success')
     return redirect(url_for('instructor.presentation_page', presentation_id=presentation.id))
 
@@ -288,7 +276,7 @@ def delete_objective_route(presentation_id, objective_id):
 def get_objective_questions_route(presentation_id, objective_id):
     username = session.get('username')
     try:
-        presentation = load_presentation(username, presentation_id)
+        presentation = presentations_repo.load_presentation(username, presentation_id)
     except (FileNotFoundError, KeyError, ValueError):
         return jsonify({'error': 'Presentation not found.'}), 404
 
@@ -323,7 +311,7 @@ def get_objective_questions_route(presentation_id, objective_id):
 def save_question_route(presentation_id, objective_id):
     username = session.get('username')
     try:
-        presentation = load_presentation(username, presentation_id)
+        presentation = presentations_repo.load_presentation(username, presentation_id)
     except (FileNotFoundError, KeyError, ValueError):
         return jsonify({'error': 'Presentation not found.'}), 404
 
@@ -387,10 +375,10 @@ def save_question_route(presentation_id, objective_id):
     status_changed, message = presentation.validate_and_fix_status()
     if status_changed:
         # Save the presentation to update the status
-        save_presentation(presentation)
+        presentations_repo.save_presentation(presentation)
         return jsonify({'success': True, 'question_id': question_id, 'warning': message})
 
-    save_presentation(presentation)
+    presentations_repo.save_presentation(presentation)
     return jsonify({'success': True, 'question_id': question_id})
 
 @routes.route('/presentations/<presentation_id>/objectives/<objective_id>/questions/<question_id>/delete', methods=['POST'])
@@ -398,7 +386,7 @@ def save_question_route(presentation_id, objective_id):
 def delete_question_route(presentation_id, objective_id, question_id):
     username = session.get('username')
     try:
-        presentation = load_presentation(username, presentation_id)
+        presentation = presentations_repo.load_presentation(username, presentation_id)
     except (FileNotFoundError, KeyError, ValueError):
         flash('Presentation not found.', 'error')
         return redirect(url_for('instructor.presentation_page', presentation_id=presentation_id))
@@ -430,7 +418,7 @@ def delete_question_route(presentation_id, objective_id, question_id):
     if status_changed:
         flash(message, 'warning')
     
-    save_presentation(presentation)
+    presentations_repo.save_presentation(presentation)
     flash('Question deleted successfully.', 'success')
     return redirect(url_for('instructor.presentation_page', presentation_id=presentation_id))
 
@@ -439,7 +427,7 @@ def delete_question_route(presentation_id, objective_id, question_id):
 @require_instructor
 def delete_presentation_route(presentation_id):
     username = session.get('username')
-    if delete_presentation(username, presentation_id):
+    if presentations_repo.delete_presentation(username, presentation_id):
         flash('Presentation deleted successfully!', 'success')
     else:
         flash('Presentation not found.', 'error')
@@ -451,7 +439,7 @@ def delete_presentation_route(presentation_id):
 def run_presentation(presentation_id):
     username = session.get('username')
     try:
-        presentation = load_presentation(username, presentation_id)
+        presentation = presentations_repo.load_presentation(username, presentation_id)
     except (FileNotFoundError, KeyError, ValueError):
         flash('Presentation not found.', 'error')
         return redirect(url_for('instructor.dashboard'))
@@ -476,8 +464,7 @@ def run_presentation(presentation_id):
     estimated_duration = presentation.calculate_estimated_duration()
     
     # Get participants from run data
-    from repositories.runs import load_run_data
-    run_data = load_run_data(username, presentation_id)
+    run_data = runs_repo.load_run_data(username, presentation_id)
     participants = run_data.get('participants', []) if run_data else []
     
     return render_template('instructor/run.html', 
@@ -497,7 +484,7 @@ def refresh_pin(presentation_id):
     """Refresh the PIN code for a presentation"""
     username = session.get('username')
     try:
-        presentation = load_presentation(username, presentation_id)
+        presentation = presentations_repo.load_presentation(username, presentation_id)
     except (FileNotFoundError, KeyError, ValueError):
         return jsonify({'error': 'Presentation not found.'}), 404
     
@@ -510,7 +497,7 @@ def refresh_pin(presentation_id):
     expires_at = datetime.now() + timedelta(minutes=30)
     
     # Save new run data
-    save_run_data(username, presentation_id, pin, expires_at)
+    runs_repo.save_run_data(username, presentation_id, pin, expires_at)
     
     # Generate new join URL and QR code
     join_url = url_for('main.join_session', pin=pin, _external=True)
@@ -530,12 +517,12 @@ def pin_status(presentation_id):
     """Get the current PIN status and expiration time"""
     username = session.get('username')
     try:
-        presentation = load_presentation(username, presentation_id)
+        presentation = presentations_repo.load_presentation(username, presentation_id)
     except (FileNotFoundError, KeyError, ValueError):
         return jsonify({'error': 'Presentation not found.'}), 404
     
     # Get current run data
-    run_data = load_run_data(username, presentation_id)
+    run_data = runs_repo.load_run_data(username, presentation_id)
     if not run_data:
         return jsonify({'error': 'No active session found.'}), 404
     
