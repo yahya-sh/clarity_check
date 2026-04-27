@@ -69,55 +69,75 @@
         </div>
 
         <div class="bg-surface/50 border border-border rounded-xl p-4 md:p-5">
-            <div class="flex items-center justify-between gap-3 mb-3">
-                <h2 class="text-lg font-semibold text-text">Objectives</h2>
-                <button id="newObjectiveBtn" type="button" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm font-medium text-text transition-colors hover:bg-secondary/70" title="Create objective" aria-label="Create objective">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                    New Objective
-                </button>
-            </div>
-
-            <div id="objectivesList" class="space-y-2">
-                {% for objective in presentation.objectives|sort(attribute='order') %}
-                    <div class="group flex items-center gap-2 rounded-md border border-border bg-background/70 px-3 py-2" data-objective-id="{{ objective.objective_id }}">
-                        <div class="text-xs text-muted w-6">{{ objective.order + 1 }}.</div>
-                        <div class="flex-1 min-w-0">
-                            <p class="objective-text text-sm text-text truncate">{{ objective.text }}</p>
-                            <input type="text" class="objective-edit-input hidden h-8 w-full rounded-md border border-border bg-background px-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary" value="{{ objective.text }}" maxlength="300">
-                        </div>
-                        <div class="objective-actions flex items-center gap-1 opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto">
-                            <button type="button" class="objective-edit-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-text hover:bg-secondary/70" title="Edit" aria-label="Edit objective">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                            </button>
-                            <button type="button" class="objective-delete-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-red-600 hover:bg-red-50 hover:text-red-700" title="Delete" aria-label="Delete objective">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                            </button>
-                        </div>
-                        <div class="objective-edit-actions hidden items-center gap-1">
-                            <button type="button" class="objective-save-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-green-700 hover:bg-green-50" title="Save" aria-label="Save objective">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
-                            </button>
-                            <button type="button" class="objective-cancel-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-text hover:bg-secondary/70" title="Cancel" aria-label="Cancel objective edit">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                            </button>
-                        </div>
+            <div class="grid gap-4 lg:grid-cols-2">
+                <div class="min-w-0">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <h2 class="text-lg font-semibold text-text">Objectives</h2>
+                        <button id="newObjectiveBtn" type="button" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm font-medium text-text transition-colors hover:bg-secondary/70" title="Create objective" aria-label="Create objective">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                            New Objective
+                        </button>
                     </div>
-                {% endfor %}
+
+                    <div id="objectivesList" class="space-y-2">
+                        {% for objective in presentation.objectives|sort(attribute='order') %}
+                            <div class="objective-row group flex items-center gap-2 rounded-md border border-border bg-background/70 px-3 py-2 cursor-pointer transition-colors hover:bg-secondary/50" data-objective-id="{{ objective.objective_id }}" data-objective-text="{{ objective.text|e }}">
+                                <div class="text-xs text-muted w-6">{{ objective.order + 1 }}.</div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="objective-text text-sm text-text truncate">{{ objective.text }}</p>
+                                    <input type="text" class="objective-edit-input hidden h-8 w-full rounded-md border border-border bg-background px-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary" value="{{ objective.text }}" maxlength="300">
+                                </div>
+                                <div class="objective-actions flex items-center gap-1 opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto">
+                                    <button type="button" class="objective-edit-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-text hover:bg-secondary/70" title="Edit" aria-label="Edit objective">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                    </button>
+                                    <button type="button" class="objective-delete-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-red-600 hover:bg-red-50 hover:text-red-700" title="Delete" aria-label="Delete objective">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                                    </button>
+                                </div>
+                                <div class="objective-edit-actions hidden items-center gap-1">
+                                    <button type="button" class="objective-save-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-green-700 hover:bg-green-50" title="Save" aria-label="Save objective">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+                                    </button>
+                                    <button type="button" class="objective-cancel-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-text hover:bg-secondary/70" title="Cancel" aria-label="Cancel objective edit">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div id="emptyObjectives" class="{% if presentation.objectives %}hidden {% endif %}rounded-md border border-dashed border-border px-3 py-4 text-sm text-muted text-center">
+                        No objectives yet.
+                    </div>
+
+                    <form id="createObjectiveForm" method="POST" class="hidden" action="{{ url_for('instructor.create_objective_route', presentation_id=presentation.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="objective_text" id="createObjectiveTextInput">
+                    </form>
+
+                    <form id="updateObjectiveForm" method="POST" class="hidden">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="objective_text" id="updateObjectiveTextInput">
+                    </form>
+                </div>
+
+                <div class="min-w-0">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <h2 class="text-lg font-semibold text-text">Questions</h2>
+                        <button id="newQuestionBtn" type="button" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm font-medium text-text/80 transition-colors hover:bg-secondary/70" title="Create question" aria-label="Create question">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                            New Question
+                        </button>
+                    </div>
+
+                    <p id="questionPanelSubtitle" class="text-xs text-muted mb-2">Select an objective to view questions.</p>
+                    <div id="questionsList" class="space-y-2"></div>
+                    <div id="emptyQuestions" class="rounded-md border border-dashed border-border px-3 py-4 text-sm text-muted text-center">
+                        No questions to display.
+                    </div>
+                </div>
             </div>
-
-            <div id="emptyObjectives" class="{% if presentation.objectives %}hidden {% endif %}rounded-md border border-dashed border-border px-3 py-4 text-sm text-muted text-center">
-                No objectives yet.
-            </div>
-
-            <form id="createObjectiveForm" method="POST" class="hidden" action="{{ url_for('instructor.create_objective_route', presentation_id=presentation.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="objective_text" id="createObjectiveTextInput">
-            </form>
-
-            <form id="updateObjectiveForm" method="POST" class="hidden">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="objective_text" id="updateObjectiveTextInput">
-            </form>
         </div>
     </div>
 </div>
@@ -170,11 +190,18 @@
     const createObjectiveTextInput = document.getElementById('createObjectiveTextInput');
     const updateObjectiveForm = document.getElementById('updateObjectiveForm');
     const updateObjectiveTextInput = document.getElementById('updateObjectiveTextInput');
+    const questionsList = document.getElementById('questionsList');
+    const emptyQuestions = document.getElementById('emptyQuestions');
+    const questionPanelSubtitle = document.getElementById('questionPanelSubtitle');
+    const newQuestionBtn = document.getElementById('newQuestionBtn');
 
     const deleteObjectiveModal = document.getElementById('deleteObjectiveModal');
     const deleteObjectiveForm = document.getElementById('deleteObjectiveForm');
+    const csrfToken = '{{ csrf_token() }}';
+    const presentationId = '{{ presentation.id }}';
 
     const emptyDescriptionText = '';
+    let activeObjectiveId = null;
     let initial = {
         title: titleText.textContent.trim(),
         description: descriptionText.textContent.trim() === emptyDescriptionText ? '' : descriptionText.textContent.trim(),
@@ -249,6 +276,84 @@
         } else {
             actionsEl.classList.remove('opacity-0', 'pointer-events-none');
         }
+    }
+
+    function setActiveObjective(objectiveId) {
+        const rows = objectivesList.querySelectorAll('[data-objective-id]');
+        rows.forEach(function(row) {
+            const isActive = row.dataset.objectiveId === objectiveId;
+            row.classList.toggle('border-primary', isActive);
+            row.classList.toggle('bg-secondary/60', isActive);
+        });
+        activeObjectiveId = objectiveId;
+    }
+
+    function renderQuestions(questions) {
+        questionsList.innerHTML = '';
+        if (!questions.length) {
+            emptyQuestions.classList.remove('hidden');
+            return;
+        }
+
+        emptyQuestions.classList.add('hidden');
+        questions.forEach(function(question, index) {
+            const card = document.createElement('div');
+            card.className = 'rounded-md border border-border bg-background/70 px-3 py-2';
+            const pointsValue = question.points === null || question.points === undefined ? '-' : String(question.points);
+            const timeValue = question.time_limit === null || question.time_limit === undefined ? '-' : String(question.time_limit);
+            const questionText = question.text && question.text.trim() ? question.text.trim() : 'Untitled question';
+
+            card.innerHTML = [
+                '<p class="text-sm text-text break-words"><span class="text-muted mr-1">' + (index + 1) + '.</span>' + questionText + '</p>',
+                '<div class="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-muted">',
+                '<span>Points: <span class="text-text">' + pointsValue + '</span></span>',
+                '<span>Time limit: <span class="text-text">' + timeValue + '</span></span>',
+                '</div>'
+            ].join('');
+            questionsList.appendChild(card);
+        });
+    }
+
+    function setQuestionsLoading() {
+        questionPanelSubtitle.textContent = 'Loading questions...';
+        questionsList.innerHTML = '';
+        emptyQuestions.classList.add('hidden');
+    }
+
+    function setQuestionsError() {
+        questionPanelSubtitle.textContent = 'Failed to load questions.';
+        questionsList.innerHTML = '';
+        emptyQuestions.classList.remove('hidden');
+    }
+
+    function loadObjectiveQuestions(objectiveId, objectiveText) {
+        setActiveObjective(objectiveId);
+        setQuestionsLoading();
+
+        const endpoint = '/presentations/' + presentationId + '/objectives/' + objectiveId + '/questions';
+        return fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            },
+            body: new URLSearchParams({
+                csrf_token: csrfToken
+            }).toString()
+        })
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('Request failed');
+                }
+                return response.json();
+            })
+            .then(function(data) {
+                const questions = Array.isArray(data.questions) ? data.questions : [];
+                questionPanelSubtitle.textContent = objectiveText ? ('Questions for: ' + objectiveText) : 'Questions';
+                renderQuestions(questions);
+            })
+            .catch(function() {
+                setQuestionsError();
+            });
     }
 
     function createNewObjectiveRow() {
@@ -396,6 +501,16 @@
 
         if (event.target.closest('.objective-delete-btn')) {
             showDeleteObjectiveModal('/presentations/{{ presentation.id }}/objectives/' + objectiveId + '/delete');
+            return;
+        }
+
+        if (
+            !event.target.closest('.objective-edit-input') &&
+            !event.target.closest('.objective-actions') &&
+            !event.target.closest('.objective-edit-actions')
+        ) {
+            const objectiveText = (item.dataset.objectiveText || '').trim();
+            loadObjectiveQuestions(objectiveId, objectiveText);
         }
     });
 
@@ -434,7 +549,18 @@
         }
     });
 
+    newQuestionBtn.addEventListener('click', function() {
+        // Placeholder by request: button is present but has no action yet.
+    });
+
     syncObjectiveEmptyState();
+    const firstObjective = objectivesList.querySelector('[data-objective-id]');
+    if (firstObjective) {
+        loadObjectiveQuestions(firstObjective.dataset.objectiveId, (firstObjective.dataset.objectiveText || '').trim());
+    } else {
+        questionPanelSubtitle.textContent = 'Select an objective to view questions.';
+        renderQuestions([]);
+    }
 })();
 </script>
 {% endblock %}
