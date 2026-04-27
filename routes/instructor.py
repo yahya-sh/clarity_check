@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, flash, redirect, g, url_for, request
+from flask import Blueprint, render_template, session, flash, redirect, g, url_for, request, jsonify
 from functools import wraps
 import uuid
 from repositories import users_repo
@@ -175,6 +175,38 @@ def delete_objective_route(presentation_id, objective_id):
     save_presentation(presentation)
     flash('Objective deleted successfully.', 'success')
     return redirect(url_for('instructor.presentation_page', presentation_id=presentation.id))
+
+
+@routes.route('/presentations/<presentation_id>/objectives/<objective_id>/questions', methods=['POST'])
+@require_instructor
+def get_objective_questions_route(presentation_id, objective_id):
+    username = session.get('username')
+    try:
+        presentation = load_presentation(username, presentation_id)
+    except (FileNotFoundError, KeyError, ValueError):
+        return jsonify({'error': 'Presentation not found.'}), 404
+
+    objectives = presentation.objectives if isinstance(presentation.objectives, list) else []
+    objective = next((item for item in objectives if item.get('objective_id') == objective_id), None)
+    if objective is None:
+        return jsonify({'error': 'Objective not found.'}), 404
+
+    questions = objective.get('questions', [])
+    if not isinstance(questions, list):
+        questions = []
+
+    sorted_questions = sorted(questions, key=lambda question: question.get('order', 0))
+    payload = []
+    for question in sorted_questions:
+        payload.append({
+            'question_id': question.get('question_id'),
+            'text': question.get('text', ''),
+            'points': question.get('points'),
+            'time_limit': question.get('time_limit'),
+            'order': question.get('order', 0),
+        })
+
+    return jsonify({'questions': payload})
 
 @routes.route('/presentations/<presentation_id>/delete', methods=['POST'])
 @require_instructor
