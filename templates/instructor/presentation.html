@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="mb-6 mt-4">
+        <a href="{{ url_for('instructor.dashboard') }}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-secondary text-text border border-border shadow-sm hover:bg-secondary/70 h-9 px-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            Back to Dashboard
+        </a>
+    </div>
+
+    <div class="bg-surface/50 border border-border rounded-xl p-6 md:p-8">
+        <div class="flex items-start justify-between gap-4 mb-8">
+            <div>
+                <p class="text-xs uppercase tracking-wider text-muted mb-2">Presentation</p>
+                <h1 id="titleText" class="text-3xl font-bold text-text leading-tight" contenteditable="false">{{ presentation.title }}</h1>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button id="editBtn" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors bg-primary text-primary-foreground shadow hover:bg-primary/90" title="Edit" aria-label="Edit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                </button>
+                <button id="saveBtn" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors bg-primary text-primary-foreground shadow hover:bg-primary/90" title="Save" aria-label="Save" style="display: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+                </button>
+                <button id="cancelBtn" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors bg-surface border border-border text-text shadow-sm hover:bg-surface/80" title="Cancel" aria-label="Cancel" style="display: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <p class="text-xs uppercase tracking-wider text-muted mb-2">Description</p>
+            <p id="descriptionText" class="text-base text-text whitespace-pre-wrap min-h-[72px]" contenteditable="false">{{ presentation.description if presentation.description else 'No description provided' }}</p>
+        </div>
+
+        <div>
+            <p class="text-xs uppercase tracking-wider text-muted mb-2">Status</p>
+            <div class="flex items-center gap-3">
+                <span id="statusBadge" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border border-border bg-background text-text">
+                    {% if presentation.status == 'draft' %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                    {% elif presentation.status == 'published' %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 9.2 17 19 7.5"/></svg>
+                    {% elif presentation.status == 'archived' %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+                    {% else %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/></svg>
+                    {% endif %}
+                    <span>{{ presentation.status|capitalize }}</span>
+                </span>
+                <select id="statusSelect" class="hidden px-3 py-2 border border-border rounded-md bg-background text-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <option value="draft" {% if presentation.status == 'draft' %}selected{% endif %}>Draft</option>
+                    <option value="published" {% if presentation.status == 'published' %}selected{% endif %}>Published</option>
+                    <option value="archived" {% if presentation.status == 'archived' %}selected{% endif %}>Archived</option>
+                </select>
+            </div>
+        </div>
+
+        <form id="saveForm" method="POST" class="hidden">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="title" id="titleInput">
+            <input type="hidden" name="description" id="descriptionInput">
+            <input type="hidden" name="status" id="statusInput">
+        </form>
+    </div>
+</div>
+
+<script>
+(function() {
+    const titleText = document.getElementById('titleText');
+    const descriptionText = document.getElementById('descriptionText');
+    const statusBadge = document.getElementById('statusBadge');
+    const statusSelect = document.getElementById('statusSelect');
+    const editBtn = document.getElementById('editBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const saveForm = document.getElementById('saveForm');
+    const titleInput = document.getElementById('titleInput');
+    const descriptionInput = document.getElementById('descriptionInput');
+    const statusInput = document.getElementById('statusInput');
+
+    const emptyDescriptionText = '';
+    let initial = {
+        title: titleText.textContent.trim(),
+        description: descriptionText.textContent.trim() === emptyDescriptionText ? '' : descriptionText.textContent.trim(),
+        status: statusSelect.value
+    };
+
+    function getStatusIcon(status) {
+        if (status === 'draft') {
+            return '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+        }
+        if (status === 'published') {
+            return '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 9.2 17 19 7.5"/></svg>';
+        }
+        if (status === 'archived') {
+            return '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>';
+        }
+        return '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/></svg>';
+    }
+
+    function renderStatusBadge(status) {
+        const label = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown';
+        statusBadge.innerHTML = getStatusIcon(status) + '<span>' + label + '</span>';
+    }
+
+    function setEditing(editing) {
+        titleText.contentEditable = editing ? 'true' : 'false';
+        descriptionText.contentEditable = editing ? 'true' : 'false';
+        titleText.classList.toggle('outline-none', editing);
+        descriptionText.classList.toggle('outline-none', editing);
+        titleText.classList.toggle('ring-2', editing);
+        descriptionText.classList.toggle('ring-2', editing);
+        titleText.classList.toggle('ring-primary', editing);
+        descriptionText.classList.toggle('ring-primary', editing);
+        titleText.classList.toggle('rounded', editing);
+        descriptionText.classList.toggle('rounded', editing);
+        titleText.classList.toggle('px-1', editing);
+        descriptionText.classList.toggle('px-1', editing);
+
+        statusBadge.classList.toggle('hidden', editing);
+        statusSelect.classList.toggle('hidden', !editing);
+
+        editBtn.style.display = editing ? 'none' : 'inline-flex';
+        saveBtn.style.display = editing ? 'inline-flex' : 'none';
+        cancelBtn.style.display = editing ? 'inline-flex' : 'none';
+    }
+
+    editBtn.addEventListener('click', function() {
+        setEditing(true);
+    });
+
+    cancelBtn.addEventListener('click', function() {
+        titleText.textContent = initial.title || 'Untitled';
+        descriptionText.textContent = initial.description || emptyDescriptionText;
+        statusSelect.value = initial.status;
+        renderStatusBadge(initial.status);
+        setEditing(false);
+    });
+
+    saveBtn.addEventListener('click', function() {
+        const titleValue = titleText.textContent.trim() || 'Untitled';
+        const descriptionValue = descriptionText.textContent.trim() === emptyDescriptionText ? '' : descriptionText.textContent.trim();
+        const statusValue = statusSelect.value;
+
+        titleInput.value = titleValue;
+        descriptionInput.value = descriptionValue;
+        statusInput.value = statusValue;
+        saveForm.submit();
+    });
+})();
+</script>
+{% endblock %}
