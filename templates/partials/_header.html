@@ -1,11 +1,33 @@
-<header>
-    <nav>
-        <a href="/" class="btn btn-primary" >Home</a>
+<!-- Navbar -->
+<header class="sticky top-0 z-50 w-full border-b border-border bg-bg/95 backdrop-blur supports-[backdrop-filter]:bg-bg/60">
+  <div class="container mx-auto max-w-7xl flex h-16 items-center justify-between px-6">
+    <div class="flex items-center gap-2">
+      <a href="/" class="flex items-center space-x-2">
+        <img src="/static/favicon.svg" alt="ClarityCheck Icon" class="w-8 h-8">
+        <span class="font-bold text-xl tracking-tight">
+          <span class="text-[#6366f1]">Clarity</span><span class="text-[#ffffff]">Check</span>
+        </span>
+      </a>
+    </div>
+
+    <div class="flex flex-1 items-center justify-end space-x-4">
+      <nav class="flex items-center space-x-2">
         {% if current_user %}
-        <a href="/dashboard" class="btn btn-primary" >Dashboard</a>
-        <a href="/logout" class="btn btn-primary" >Logout</a>
+        <a href="/logout" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-surface hover:text-text h-9 px-4 py-2">
+          Log out
+        </a>
+        <a href="/dashboard" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2">
+          Dashboard
+        </a>
         {% else %}
-        <a href="/login" class="btn btn-primary" >Login</a>
+        <a href="/login" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-surface hover:text-text h-9 px-4 py-2">
+          Log in
+        </a>
+        <a href="/register" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2">
+          Get Started
+        </a>
         {% endif %}
-    </nav>
+      </nav>
+    </div>
+  </div>
 </header>
