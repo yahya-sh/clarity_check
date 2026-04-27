@@ -200,11 +200,16 @@
         </div>
 
         <!-- Participants Section -->
-        <div class="bg-surface/50 border border-border rounded-xl p-4 sm:p-6 mt-6">
+        <div id="participantsSection" class="bg-surface/50 border border-border rounded-xl p-4 sm:p-6 mt-6">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-semibold text-text">Participants</h2>
-                <div class="text-sm text-muted">
-                    {{ participants|length }} joined
+                <div class="flex items-center gap-3">
+                    <div class="text-sm text-muted">
+                        {{ participants|length }} joined
+                    </div>
+                    <button id="refreshParticipantsBtn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-surface text-text border border-border shadow-sm hover:bg-surface/70 h-8 w-8 p-0 cursor-pointer" title="Refresh participants">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                    </button>
                 </div>
             </div>
             
@@ -235,6 +240,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const startSessionBtn = document.getElementById('startSessionBtn');
     const refreshPinBtn = document.getElementById('refreshPinBtn');
+    const refreshParticipantsBtn = document.getElementById('refreshParticipantsBtn');
     const pinCodeElement = document.getElementById('pinCode');
     const countdownText = document.getElementById('countdownText');
     const countdownElement = document.getElementById('countdown');
@@ -370,11 +376,107 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error fetching PIN status:', error);
         });
     
-    // Auto-refresh participants every 10 seconds
-    setInterval(function() {
-        // TODO: Implement participant refresh logic
-        // This would fetch updated participant list from server
-    }, 10000);
+    // Participants auto-refresh functionality
+    let participantsRefreshInterval;
+    let lastKnownParticipants = [];
+    
+    function updateParticipantsDisplay(participants) {
+        const participantsSection = document.getElementById('participantsSection');
+        if (!participantsSection) return;
+        
+        const participantsGrid = participantsSection.querySelector('.grid');
+        const countElement = participantsSection.querySelector('.text-sm.text-muted');
+        
+        // Update count
+        if (countElement) {
+            countElement.textContent = `${participants.length} joined`;
+        }
+        
+        if (participants.length === 0) {
+            // Show empty state
+            if (participantsGrid) {
+                participantsGrid.innerHTML = `
+                    <div class="text-center py-8 text-muted col-span-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <p class="text-sm">No participants yet</p>
+                        <p class="text-xs mt-1">Share the join link to get started</p>
+                    </div>
+                `;
+            }
+        } else {
+            // Show participants grid
+            if (participantsGrid) {
+                participantsGrid.innerHTML = participants.map(participant => `
+                    <div class="bg-background border border-border rounded-lg p-3 flex items-center gap-2 animate-fade-in">
+                        <div class="w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center text-sm font-medium">
+                            ${participant.nickname[0].toUpperCase()}
+                        </div>
+                        <span class="text-sm text-text">${participant.nickname}</span>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        // Show notification for new participants
+        const newParticipants = participants.filter(p => 
+            !lastKnownParticipants.some(lp => lp.nickname === p.nickname)
+        );
+        
+        if (newParticipants.length > 0) {
+            const names = newParticipants.map(p => p.nickname).join(', ');
+            showNotification(`${newParticipants.length} new participant${newParticipants.length > 1 ? 's' : ''} joined: ${names}`, 'success');
+        }
+        
+        lastKnownParticipants = [...participants];
+    }
+    
+    async function fetchParticipants() {
+        try {
+            const response = await fetch(`/presentations/{{ presentation.id }}/participants`);
+            if (response.ok) {
+                const data = await response.json();
+                updateParticipantsDisplay(data.participants || []);
+            }
+        } catch (error) {
+            console.error('Error fetching participants:', error);
+        }
+    }
+    
+    // Manual refresh participants button functionality
+    refreshParticipantsBtn.addEventListener('click', async function() {
+        this.disabled = true;
+        this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>';
+        
+        try {
+            await fetchParticipants();
+        } catch (error) {
+            console.error('Error refreshing participants:', error);
+        } finally {
+            this.disabled = false;
+            this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>';
+        }
+    });
+    
+    // Start participants auto-refresh
+    function startParticipantsRefresh() {
+        // Initial fetch
+        fetchParticipants();
+        
+        // Set up interval to refresh every 5 seconds
+        participantsRefreshInterval = setInterval(fetchParticipants, 5000);
+    }
+    
+    // Stop participants refresh when page is hidden
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            clearInterval(participantsRefreshInterval);
+        } else {
+            startParticipantsRefresh();
+        }
+    });
+    
+    // Start the refresh
+    startParticipantsRefresh();
 });
 </script>
 {% endblock %}

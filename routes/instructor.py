@@ -530,3 +530,22 @@ def pin_status(presentation_id):
         'pin': run_data.get('pin_code'),
         'expires_at': run_data.get('expires_at')
     })
+
+
+@routes.route('/presentations/<presentation_id>/participants', methods=['GET'])
+@require_instructor
+def get_participants(presentation_id):
+    """Get the current list of participants for a run"""
+    username = session.get('username')
+    try:
+        presentation = presentations_repo.load_presentation(username, presentation_id)
+    except (FileNotFoundError, KeyError, ValueError):
+        return jsonify({'error': 'Presentation not found.'}), 404
+    
+    # Get current run data
+    run_data = runs_repo.load_run_data(username, presentation_id)
+    if not run_data:
+        return jsonify({'participants': []})
+    
+    participants = run_data.get('participants', [])
+    return jsonify({'participants': participants})
