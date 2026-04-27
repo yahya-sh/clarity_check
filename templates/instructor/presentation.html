@@ -1,68 +1,151 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
-    <div class="mb-6 mt-4">
+<div class="max-w-5xl mx-auto">
+    <div class="mb-4 mt-4">
         <a href="{{ url_for('instructor.dashboard') }}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-secondary text-text border border-border shadow-sm hover:bg-secondary/70 h-9 px-4">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
             Back to Dashboard
         </a>
     </div>
 
-    <div class="bg-surface/50 border border-border rounded-xl p-6 md:p-8">
-        <div class="flex items-start justify-between gap-4 mb-8">
-            <div>
-                <p class="text-xs uppercase tracking-wider text-muted mb-2">Presentation</p>
-                <h1 id="titleText" class="text-3xl font-bold text-text leading-tight" contenteditable="false">{{ presentation.title }}</h1>
+    <div class="space-y-4">
+        <div class="bg-surface/50 border border-border rounded-xl p-4 md:p-5">
+            <div class="flex items-start justify-between gap-4 mb-4">
+                <div class="w-full">
+                    <p class="text-xs uppercase tracking-wider text-muted mb-1.5">Presentation</p>
+                    <h1 id="titleText" class="text-2xl md:text-3xl font-bold text-text leading-tight" contenteditable="false">{{ presentation.title }}</h1>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                    <button id="editBtn" type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors bg-primary text-primary-foreground shadow hover:bg-primary/90" title="Edit" aria-label="Edit">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                    </button>
+                    <button id="saveBtn" type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors bg-primary text-primary-foreground shadow hover:bg-primary/90" title="Save" aria-label="Save" style="display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+                    </button>
+                    <button id="cancelBtn" type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors bg-surface border border-border text-text shadow-sm hover:bg-surface/80" title="Cancel" aria-label="Cancel" style="display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                </div>
             </div>
 
-            <div class="flex items-center gap-2">
-                <button id="editBtn" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors bg-primary text-primary-foreground shadow hover:bg-primary/90" title="Edit" aria-label="Edit">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            <div class="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-muted mb-1.5">Description</p>
+                    <p id="descriptionText" class="text-sm md:text-base text-text whitespace-pre-wrap min-h-[56px]" contenteditable="false">{{ presentation.description if presentation.description else '' }}</p>
+                </div>
+
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-muted mb-1.5">Status</p>
+                    <div class="flex items-center gap-2">
+                        <span id="statusBadge" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border border-border bg-background text-text">
+                            {% if presentation.status == 'draft' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                            {% elif presentation.status == 'published' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 9.2 17 19 7.5"/></svg>
+                            {% elif presentation.status == 'archived' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+                            {% else %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/></svg>
+                            {% endif %}
+                            <span>{{ presentation.status|capitalize }}</span>
+                        </span>
+                        <select id="statusSelect" class="hidden h-8 px-2.5 border border-border rounded-md bg-background text-text text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="draft" {% if presentation.status == 'draft' %}selected{% endif %}>Draft</option>
+                            <option value="published" {% if presentation.status == 'published' %}selected{% endif %}>Published</option>
+                            <option value="archived" {% if presentation.status == 'archived' %}selected{% endif %}>Archived</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <form id="saveForm" method="POST" class="hidden">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="title" id="titleInput">
+                <input type="hidden" name="description" id="descriptionInput">
+                <input type="hidden" name="status" id="statusInput">
+            </form>
+        </div>
+
+        <div class="bg-surface/50 border border-border rounded-xl p-4 md:p-5">
+            <div class="flex items-center justify-between gap-3 mb-3">
+                <h2 class="text-lg font-semibold text-text">Objectives</h2>
+                <button id="newObjectiveBtn" type="button" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm font-medium text-text transition-colors hover:bg-secondary/70" title="Create objective" aria-label="Create objective">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    New Objective
                 </button>
-                <button id="saveBtn" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors bg-primary text-primary-foreground shadow hover:bg-primary/90" title="Save" aria-label="Save" style="display: none;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+            </div>
+
+            <div id="objectivesList" class="space-y-2">
+                {% for objective in presentation.objectives|sort(attribute='order') %}
+                    <div class="group flex items-center gap-2 rounded-md border border-border bg-background/70 px-3 py-2" data-objective-id="{{ objective.objective_id }}">
+                        <div class="text-xs text-muted w-6">{{ objective.order + 1 }}.</div>
+                        <div class="flex-1 min-w-0">
+                            <p class="objective-text text-sm text-text truncate">{{ objective.text }}</p>
+                            <input type="text" class="objective-edit-input hidden h-8 w-full rounded-md border border-border bg-background px-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary" value="{{ objective.text }}" maxlength="300">
+                        </div>
+                        <div class="objective-actions flex items-center gap-1 opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto">
+                            <button type="button" class="objective-edit-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-text hover:bg-secondary/70" title="Edit" aria-label="Edit objective">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                            </button>
+                            <button type="button" class="objective-delete-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-red-600 hover:bg-red-50 hover:text-red-700" title="Delete" aria-label="Delete objective">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                            </button>
+                        </div>
+                        <div class="objective-edit-actions hidden items-center gap-1">
+                            <button type="button" class="objective-save-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-green-700 hover:bg-green-50" title="Save" aria-label="Save objective">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+                            </button>
+                            <button type="button" class="objective-cancel-btn inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-text hover:bg-secondary/70" title="Cancel" aria-label="Cancel objective edit">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div id="emptyObjectives" class="{% if presentation.objectives %}hidden {% endif %}rounded-md border border-dashed border-border px-3 py-4 text-sm text-muted text-center">
+                No objectives yet.
+            </div>
+
+            <form id="createObjectiveForm" method="POST" class="hidden" action="{{ url_for('instructor.create_objective_route', presentation_id=presentation.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="objective_text" id="createObjectiveTextInput">
+            </form>
+
+            <form id="updateObjectiveForm" method="POST" class="hidden">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="objective_text" id="updateObjectiveTextInput">
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="deleteObjectiveModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-surface border border-border rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-500/20 rounded-full mb-4">
+                <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-text text-center mb-2">Delete Objective</h3>
+            <p class="text-muted text-center mb-6">Are you sure you want to delete this objective? This action cannot be undone.</p>
+
+            <form id="deleteObjectiveForm" method="POST" class="hidden">
+                <input type="hidden" name="csrf_token" id="deleteObjectiveCsrfToken" value="{{ csrf_token() }}">
+            </form>
+
+            <div class="flex gap-3">
+                <button type="button" onclick="closeDeleteObjectiveModal()" class="flex-1 px-4 py-2 text-text bg-secondary border border-border rounded-lg hover:bg-secondary/70 transition-colors font-medium cursor-pointer">
+                    Cancel
                 </button>
-                <button id="cancelBtn" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors bg-surface border border-border text-text shadow-sm hover:bg-surface/80" title="Cancel" aria-label="Cancel" style="display: none;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                <button type="button" onclick="confirmDeleteObjective()" class="flex-1 px-4 py-2 text-white bg-red-600 border border-red-600 rounded-lg hover:bg-red-700 transition-colors font-medium cursor-pointer">
+                    Delete
                 </button>
             </div>
         </div>
-
-        <div class="mb-8">
-            <p class="text-xs uppercase tracking-wider text-muted mb-2">Description</p>
-            <p id="descriptionText" class="text-base text-text whitespace-pre-wrap min-h-[72px]" contenteditable="false">{{ presentation.description if presentation.description else 'No description provided' }}</p>
-        </div>
-
-        <div>
-            <p class="text-xs uppercase tracking-wider text-muted mb-2">Status</p>
-            <div class="flex items-center gap-3">
-                <span id="statusBadge" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border border-border bg-background text-text">
-                    {% if presentation.status == 'draft' %}
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                    {% elif presentation.status == 'published' %}
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 9.2 17 19 7.5"/></svg>
-                    {% elif presentation.status == 'archived' %}
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
-                    {% else %}
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/></svg>
-                    {% endif %}
-                    <span>{{ presentation.status|capitalize }}</span>
-                </span>
-                <select id="statusSelect" class="hidden px-3 py-2 border border-border rounded-md bg-background text-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                    <option value="draft" {% if presentation.status == 'draft' %}selected{% endif %}>Draft</option>
-                    <option value="published" {% if presentation.status == 'published' %}selected{% endif %}>Published</option>
-                    <option value="archived" {% if presentation.status == 'archived' %}selected{% endif %}>Archived</option>
-                </select>
-            </div>
-        </div>
-
-        <form id="saveForm" method="POST" class="hidden">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="title" id="titleInput">
-            <input type="hidden" name="description" id="descriptionInput">
-            <input type="hidden" name="status" id="statusInput">
-        </form>
     </div>
 </div>
 
@@ -80,6 +163,17 @@
     const descriptionInput = document.getElementById('descriptionInput');
     const statusInput = document.getElementById('statusInput');
 
+    const objectivesList = document.getElementById('objectivesList');
+    const emptyObjectives = document.getElementById('emptyObjectives');
+    const newObjectiveBtn = document.getElementById('newObjectiveBtn');
+    const createObjectiveForm = document.getElementById('createObjectiveForm');
+    const createObjectiveTextInput = document.getElementById('createObjectiveTextInput');
+    const updateObjectiveForm = document.getElementById('updateObjectiveForm');
+    const updateObjectiveTextInput = document.getElementById('updateObjectiveTextInput');
+
+    const deleteObjectiveModal = document.getElementById('deleteObjectiveModal');
+    const deleteObjectiveForm = document.getElementById('deleteObjectiveForm');
+
     const emptyDescriptionText = '';
     let initial = {
         title: titleText.textContent.trim(),
@@ -87,7 +181,6 @@
         status: statusSelect.value
     };
 
-    // Auto-enable editing mode if edit parameter is present
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('edit') === 'true') {
         setEditing(true);
@@ -133,6 +226,115 @@
         cancelBtn.style.display = editing ? 'inline-flex' : 'none';
     }
 
+    function syncObjectiveEmptyState() {
+        const hasRows = objectivesList.querySelectorAll('[data-objective-id], [data-new-objective-row]').length > 0;
+        emptyObjectives.classList.toggle('hidden', hasRows);
+    }
+
+    function setObjectiveEditingState(item, editing) {
+        const textEl = item.querySelector('.objective-text');
+        const inputEl = item.querySelector('.objective-edit-input');
+        const actionsEl = item.querySelector('.objective-actions');
+        const editActionsEl = item.querySelector('.objective-edit-actions');
+
+        textEl.classList.toggle('hidden', editing);
+        inputEl.classList.toggle('hidden', !editing);
+        editActionsEl.classList.toggle('hidden', !editing);
+        editActionsEl.classList.toggle('flex', editing);
+
+        if (editing) {
+            actionsEl.classList.add('opacity-0', 'pointer-events-none');
+            inputEl.focus();
+            inputEl.select();
+        } else {
+            actionsEl.classList.remove('opacity-0', 'pointer-events-none');
+        }
+    }
+
+    function createNewObjectiveRow() {
+        if (objectivesList.querySelector('[data-new-objective-row]')) {
+            const existingInput = objectivesList.querySelector('[data-new-objective-row] input');
+            if (existingInput) {
+                existingInput.focus();
+            }
+            return;
+        }
+
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2 rounded-md border border-border bg-background/70 px-3 py-2';
+        row.setAttribute('data-new-objective-row', 'true');
+
+        const currentCount = objectivesList.querySelectorAll('[data-objective-id]').length;
+
+        row.innerHTML = [
+            '<div class="text-xs text-muted w-6">' + (currentCount + 1) + '.</div>',
+            '<div class="flex-1 min-w-0">',
+            '<input type="text" class="new-objective-input h-8 w-full rounded-md border border-border bg-background px-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Objective title" maxlength="300">',
+            '</div>',
+            '<div class="flex items-center gap-1">',
+            '<button type="button" class="new-objective-save inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-green-700 hover:bg-green-50" title="Save" aria-label="Save objective">',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>',
+            '</button>',
+            '<button type="button" class="new-objective-cancel inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-text hover:bg-secondary/70" title="Cancel" aria-label="Cancel objective">',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
+            '</button>',
+            '</div>'
+        ].join('');
+
+        objectivesList.appendChild(row);
+        syncObjectiveEmptyState();
+
+        const input = row.querySelector('.new-objective-input');
+        const save = row.querySelector('.new-objective-save');
+        const cancel = row.querySelector('.new-objective-cancel');
+
+        input.focus();
+
+        function removeRow() {
+            row.remove();
+            syncObjectiveEmptyState();
+        }
+
+        function submitCreate() {
+            const value = input.value.trim();
+            if (!value) {
+                input.focus();
+                return;
+            }
+            createObjectiveTextInput.value = value;
+            createObjectiveForm.submit();
+        }
+
+        save.addEventListener('click', submitCreate);
+        cancel.addEventListener('click', removeRow);
+        input.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                submitCreate();
+            }
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                removeRow();
+            }
+        });
+    }
+
+    function showDeleteObjectiveModal(deleteUrl) {
+        deleteObjectiveForm.action = deleteUrl;
+        deleteObjectiveModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeDeleteObjectiveModal() {
+        deleteObjectiveModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    window.closeDeleteObjectiveModal = closeDeleteObjectiveModal;
+    window.confirmDeleteObjective = function() {
+        deleteObjectiveForm.submit();
+    };
+
     editBtn.addEventListener('click', function() {
         setEditing(true);
     });
@@ -155,6 +357,84 @@
         statusInput.value = statusValue;
         saveForm.submit();
     });
+
+    newObjectiveBtn.addEventListener('click', createNewObjectiveRow);
+
+    objectivesList.addEventListener('click', function(event) {
+        const item = event.target.closest('[data-objective-id]');
+        if (!item) {
+            return;
+        }
+
+        const objectiveId = item.dataset.objectiveId;
+        const input = item.querySelector('.objective-edit-input');
+        const textEl = item.querySelector('.objective-text');
+
+        if (event.target.closest('.objective-edit-btn')) {
+            input.value = textEl.textContent.trim();
+            setObjectiveEditingState(item, true);
+            return;
+        }
+
+        if (event.target.closest('.objective-cancel-btn')) {
+            input.value = textEl.textContent.trim();
+            setObjectiveEditingState(item, false);
+            return;
+        }
+
+        if (event.target.closest('.objective-save-btn')) {
+            const value = input.value.trim();
+            if (!value) {
+                input.focus();
+                return;
+            }
+            updateObjectiveTextInput.value = value;
+            updateObjectiveForm.action = '/presentations/{{ presentation.id }}/objectives/' + objectiveId + '/update';
+            updateObjectiveForm.submit();
+            return;
+        }
+
+        if (event.target.closest('.objective-delete-btn')) {
+            showDeleteObjectiveModal('/presentations/{{ presentation.id }}/objectives/' + objectiveId + '/delete');
+        }
+    });
+
+    objectivesList.addEventListener('keydown', function(event) {
+        const item = event.target.closest('[data-objective-id]');
+        if (!item || !event.target.classList.contains('objective-edit-input')) {
+            return;
+        }
+
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const saveBtn = item.querySelector('.objective-save-btn');
+            if (saveBtn) {
+                saveBtn.click();
+            }
+        }
+
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            const cancelBtn = item.querySelector('.objective-cancel-btn');
+            if (cancelBtn) {
+                cancelBtn.click();
+            }
+        }
+    });
+
+    deleteObjectiveModal.addEventListener('click', function(event) {
+        if (event.target === deleteObjectiveModal) {
+            closeDeleteObjectiveModal();
+        }
+    });
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && !deleteObjectiveModal.classList.contains('hidden')) {
+            closeDeleteObjectiveModal();
+        }
+    });
+
+    syncObjectiveEmptyState();
 })();
 </script>
 {% endblock %}
