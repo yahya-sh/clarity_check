@@ -24,7 +24,26 @@ Don’t just present your message — prove it was understood.
 
 - Flask
 - Flask-WTF
- 
+- Tailwind CSS CLI (for styling)
+
+### Installing Tailwind CLI (v4.2.4)
+
+Tailwind CLI v4.2.4 can be used without Node.js. Follow these steps:
+
+1. **Follow the official documentations**:
+   Visit [https://tailwindcss.com/docs/installation/tailwind-cli](https://tailwindcss.com/docs/installation/tailwind-cli) for detailed installation instructions.
+
+2. **Verify installation**:
+   ```bash
+   tailwindcss --version
+   ```
+
+3. **Build CSS using provided scripts**:
+   - For development (with watch mode): `./dev_build_tailwind.sh`
+   - For production (minified): `./prod_build_tailwind.sh`
+
+For detailed installation instructions, visit: [https://tailwindcss.com/docs/installation/tailwind-cli](https://tailwindcss.com/docs/installation/tailwind-cli)
+
 ## How to Run
  
 ```bash
@@ -34,14 +53,11 @@ cd clarity_check
  
 # 2. Install requirements
 pip install -r requirements.txt
- 
-# 3. Run the app
-flask run
 
-# 4. Or Run in (debug mode)
-python app.py
+# 3. Or Run in (debug mode)
+python main.py
  
-# 5. Open in your browser
+# 4. Open in your browser
 http://127.0.0.1:5000
 ```
  
@@ -114,5 +130,5 @@ In particular, the code should not use `print()` or
 `console.log()` for any information the app user should see.
 Instead, all user feedback needs to be visible in the
 browser.
-- [ ] All exercises have been completed as per the
+- [x] All exercises have been completed as per the
 requirements and pushed to the respective GitHub repository.
