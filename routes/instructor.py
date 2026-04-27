@@ -1,6 +1,12 @@
-from flask import Blueprint, render_template, session, flash, redirect, g, url_for, request, jsonify
+from flask import Blueprint, render_template, session, flash, redirect, g, url_for, request, jsonify, make_response
 from functools import wraps
 import uuid
+import random
+import string
+from datetime import datetime, timedelta
+import qrcode
+import io
+import base64
 from repositories import users_repo
 from repositories.presentations import (
     get_user_presentations,
@@ -8,10 +14,78 @@ from repositories.presentations import (
     delete_presentation,
     load_presentation,
 )
+from repositories.runs import (
+    save_run_data,
+    load_run_data,
+    delete_run_data,
+    pin_exists_for_user,
+    cleanup_expired_runs,
+)
 from forms.question import SaveQuestionForm
 from models.presentation import Presentation
 
 routes = Blueprint('instructor', __name__)
+
+def generate_pin_code():
+    """Generate a 6-digit PIN code"""
+    return ''.join(random.choices(string.digits, k=6))
+
+def get_or_create_pin(presentation):
+    """Get existing PIN or create new one if expired or missing"""
+    username = presentation.username
+    presentation_uuid = presentation.id
+    now = datetime.now()
+    
+    # Cleanup expired runs first
+    cleanup_expired_runs(username)
+    
+    # Check if run already exists for this presentation
+    run_data = load_run_data(username, presentation_uuid)
+    if run_data:
+        try:
+            expires_at = datetime.fromisoformat(run_data.get('expires_at'))
+            if expires_at > now:
+                return run_data.get('pin_code')
+        except (ValueError, TypeError):
+            pass
+    
+    # Generate unique PIN
+    pin = generate_unique_pin(username)
+    expires_at = now + timedelta(minutes=30)
+    
+    # Save run data
+    save_run_data(username, presentation_uuid, pin, expires_at)
+    
+    return pin
+
+def generate_unique_pin(username):
+    """Generate a unique PIN code for the user"""
+    max_attempts = 100
+    attempts = 0
+    
+    while attempts < max_attempts:
+        pin = generate_pin_code()
+        if not pin_exists_for_user(username, pin):
+            return pin
+        attempts += 1
+    
+    # If we can't generate unique PIN after many attempts, raise exception
+    raise Exception("Unable to generate unique PIN after multiple attempts")
+
+def generate_qr_code(join_url):
+    """Generate QR code for the join URL"""
+    qr = qrcode.QRCode(version=1, box_size=10, border=2)
+    qr.add_data(join_url)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Convert to base64 for embedding in HTML
+    buffer = io.BytesIO()
+    img.save(buffer, format='PNG')
+    img_str = base64.b64encode(buffer.getvalue()).decode()
+    
+    return f"data:image/png;base64,{img_str}"
 
 def require_instructor(f):
     @wraps(f)
@@ -326,3 +400,102 @@ def delete_presentation_route(presentation_id):
     else:
         flash('Presentation not found.', 'error')
     return redirect(url_for('instructor.dashboard'))
+
+
+@routes.route('/presentations/<presentation_id>/run', methods=['GET'])
+@require_instructor
+def run_presentation(presentation_id):
+    username = session.get('username')
+    try:
+        presentation = load_presentation(username, presentation_id)
+    except (FileNotFoundError, KeyError, ValueError):
+        flash('Presentation not found.', 'error')
+        return redirect(url_for('instructor.dashboard'))
+    
+    # Check if presentation is published
+    if presentation.status != 'published':
+        flash('Presentation must be published to run a session.', 'error')
+        return redirect(url_for('instructor.presentation_page', presentation_id=presentation_id))
+    
+    # Get or create PIN
+    pin = get_or_create_pin(presentation)
+    
+    # Generate join URL and QR code
+    join_url = url_for('main.join_session', pin=pin, _external=True)
+    qr_code_data = generate_qr_code(join_url)
+    
+    # Calculate presentation stats
+    objectives = presentation.objectives if isinstance(presentation.objectives, list) else []
+    total_questions = sum(len(obj.get('questions', [])) for obj in objectives)
+    
+    # Calculate estimated duration using the presentation method
+    estimated_duration = presentation.calculate_estimated_duration()
+    
+    # Get participants from run data
+    from repositories.runs import load_run_data
+    run_data = load_run_data(username, presentation_id)
+    participants = run_data.get('participants', []) if run_data else []
+    
+    return render_template('instructor/run.html', 
+                         presentation=presentation,
+                         pin=pin,
+                         join_url=join_url,
+                         qr_code=qr_code_data,
+                         objectives_count=len(objectives),
+                         questions_count=total_questions,
+                         estimated_duration=estimated_duration,
+                         participants=participants)
+
+
+@routes.route('/presentations/<presentation_id>/refresh-pin', methods=['POST'])
+@require_instructor
+def refresh_pin(presentation_id):
+    """Refresh the PIN code for a presentation"""
+    username = session.get('username')
+    try:
+        presentation = load_presentation(username, presentation_id)
+    except (FileNotFoundError, KeyError, ValueError):
+        return jsonify({'error': 'Presentation not found.'}), 404
+    
+    # Check if presentation is published
+    if presentation.status != 'published':
+        return jsonify({'error': 'Presentation must be published to refresh PIN.'}), 400
+    
+    # Generate new PIN and expiration
+    pin = generate_unique_pin(username)
+    expires_at = datetime.now() + timedelta(minutes=30)
+    
+    # Save new run data
+    save_run_data(username, presentation_id, pin, expires_at)
+    
+    # Generate new join URL and QR code
+    join_url = url_for('main.join_session', pin=pin, _external=True)
+    qr_code_data = generate_qr_code(join_url)
+    
+    return jsonify({
+        'pin': pin,
+        'expires_at': expires_at.isoformat(),
+        'join_url': join_url,
+        'qr_code': qr_code_data
+    })
+
+
+@routes.route('/presentations/<presentation_id>/pin-status', methods=['GET'])
+@require_instructor
+def pin_status(presentation_id):
+    """Get the current PIN status and expiration time"""
+    username = session.get('username')
+    try:
+        presentation = load_presentation(username, presentation_id)
+    except (FileNotFoundError, KeyError, ValueError):
+        return jsonify({'error': 'Presentation not found.'}), 404
+    
+    # Get current run data
+    run_data = load_run_data(username, presentation_id)
+    if not run_data:
+        return jsonify({'error': 'No active session found.'}), 404
+    
+    return jsonify({
+        'pin': run_data.get('pin_code'),
+        'expires_at': run_data.get('expires_at')
+    })
