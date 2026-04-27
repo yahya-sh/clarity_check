@@ -150,9 +150,22 @@ def presentation_page(presentation_id):
             flash('Invalid status selected.', 'error')
             return redirect(url_for('instructor.presentation_page', presentation_id=presentation.id))
 
+        # Validate publishing requirements
+        if status == 'published':
+            can_publish, error_message = presentation.can_be_published()
+            if not can_publish:
+                flash(error_message, 'error')
+                return redirect(url_for('instructor.presentation_page', presentation_id=presentation.id))
+
         presentation.title = title
         presentation.description = description
         presentation.status = status
+        
+        # Check if presentation needs to be converted to draft after changes
+        status_changed, message = presentation.validate_and_fix_status()
+        if status_changed:
+            flash(message, 'warning')
+        
         save_presentation(presentation)
         flash('Presentation saved successfully.', 'success')
         return redirect(url_for('instructor.presentation_page', presentation_id=presentation.id))
@@ -187,6 +200,12 @@ def create_objective_route(presentation_id):
         'order': next_order,
         'questions': []
     })
+    
+    # Check if presentation needs to be converted to draft
+    status_changed, message = presentation.validate_and_fix_status()
+    if status_changed:
+        flash(message, 'warning')
+    
     save_presentation(presentation)
     flash('Objective created successfully.', 'success')
     return redirect(url_for('instructor.presentation_page', presentation_id=presentation.id))
@@ -221,6 +240,12 @@ def update_objective_route(presentation_id, objective_id):
         return redirect(url_for('instructor.presentation_page', presentation_id=presentation.id))
 
     presentation.objectives = objectives
+    
+    # Check if presentation needs to be converted to draft
+    status_changed, message = presentation.validate_and_fix_status()
+    if status_changed:
+        flash(message, 'warning')
+    
     save_presentation(presentation)
     flash('Objective updated successfully.', 'success')
     return redirect(url_for('instructor.presentation_page', presentation_id=presentation.id))
@@ -247,6 +272,12 @@ def delete_objective_route(presentation_id, objective_id):
         objective['order'] = index
 
     presentation.objectives = filtered_objectives
+    
+    # Check if presentation needs to be converted to draft
+    status_changed, message = presentation.validate_and_fix_status()
+    if status_changed:
+        flash(message, 'warning')
+    
     save_presentation(presentation)
     flash('Objective deleted successfully.', 'success')
     return redirect(url_for('instructor.presentation_page', presentation_id=presentation.id))
@@ -352,6 +383,13 @@ def save_question_route(presentation_id, objective_id):
         existing_question['points'] = points
         existing_question['time_limit'] = time_limit
 
+    # Check if presentation needs to be converted to draft
+    status_changed, message = presentation.validate_and_fix_status()
+    if status_changed:
+        # Save the presentation to update the status
+        save_presentation(presentation)
+        return jsonify({'success': True, 'question_id': question_id, 'warning': message})
+
     save_presentation(presentation)
     return jsonify({'success': True, 'question_id': question_id})
 
@@ -386,6 +424,12 @@ def delete_question_route(presentation_id, objective_id, question_id):
         question['order'] = index
 
     objective['questions'] = filtered_questions
+    
+    # Check if presentation needs to be converted to draft
+    status_changed, message = presentation.validate_and_fix_status()
+    if status_changed:
+        flash(message, 'warning')
+    
     save_presentation(presentation)
     flash('Question deleted successfully.', 'success')
     return redirect(url_for('instructor.presentation_page', presentation_id=presentation_id))
