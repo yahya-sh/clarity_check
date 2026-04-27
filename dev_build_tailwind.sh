@@ -1,0 +1,1 @@
+tailwindcss -i ./assets/css/input.css -o ./static/css/tailwind.css --watch

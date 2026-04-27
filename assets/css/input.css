@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  /* Modern Dark Mode (Zinc-based) */
+  --color-bg: #09090b; /* zinc-950 */
+  --color-surface: #18181b; /* zinc-900 */
+  --color-border: #27272a; /* zinc-800 */
+  
+  /* Text */
+  --color-text: #fafafa; /* zinc-50 */
+  --color-muted: #a1a1aa; /* zinc-400 */
+  --color-inverse: #09090b;
+
+  /* Brand Colors */
+  --color-primary: #fafafa; /* shadcn primary is often foreground */
+  --color-primary-foreground: #18181b; /* dark text on light primary */
+  
+  --color-secondary: #27272a; /* zinc-800 */
+  --color-secondary-foreground: #fafafa;
+  
+  --color-accent: #6366f1; /* Indigo 500 for subtle accents */
+  --color-accent-foreground: #ffffff;
+  
+  --color-ring: #d4d4d8; /* zinc-300 */
+  
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  --radius-lg: 0.5rem;
+  --radius-md: calc(var(--radius-lg) - 2px);
+  --radius-sm: calc(var(--radius-md) - 2px);
+}
+
+/* Tell Tailwind where to scan */
+@source "../../templates/**/*.html";
+@source "../../static/js/**/*.js";
