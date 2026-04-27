@@ -8,6 +8,7 @@ from repositories.presentations import (
     delete_presentation,
     load_presentation,
 )
+from forms.question import SaveQuestionForm
 from models.presentation import Presentation
 
 routes = Blueprint('instructor', __name__)
@@ -201,12 +202,84 @@ def get_objective_questions_route(presentation_id, objective_id):
         payload.append({
             'question_id': question.get('question_id'),
             'text': question.get('text', ''),
+            'type': question.get('type', 'single_choice'),
+            'choices': question.get('choices', []),
+            'correct_indices': question.get('correct_indices', question.get('correct_indicies', [])),
             'points': question.get('points'),
             'time_limit': question.get('time_limit'),
             'order': question.get('order', 0),
         })
 
     return jsonify({'questions': payload})
+
+
+@routes.route('/presentations/<presentation_id>/objectives/<objective_id>/questions/save', methods=['POST'])
+@require_instructor
+def save_question_route(presentation_id, objective_id):
+    username = session.get('username')
+    try:
+        presentation = load_presentation(username, presentation_id)
+    except (FileNotFoundError, KeyError, ValueError):
+        return jsonify({'error': 'Presentation not found.'}), 404
+
+    objectives = presentation.objectives if isinstance(presentation.objectives, list) else []
+    objective = next((item for item in objectives if item.get('objective_id') == objective_id), None)
+    if objective is None:
+        return jsonify({'error': 'Objective not found.'}), 404
+
+    questions = objective.get('questions', [])
+    if not isinstance(questions, list):
+        questions = []
+        objective['questions'] = questions
+
+    # Instructor username is passed to the form instance for context-sensitive validation/logic.
+    form = SaveQuestionForm(formdata=request.form, meta={'csrf': False}, instructor_username=username)
+    if not form.validate():
+        first_error = next((errors[0] for errors in form.errors.values() if errors), 'Invalid question payload.')
+        return jsonify({'error': first_error}), 400
+    if (form.objective_id.data or '').strip() != objective_id:
+        return jsonify({'error': 'Objective ID mismatch.'}), 400
+
+    question_id = (form.question_id.data or '').strip()
+    text = (form.text.data or '').strip()
+    question_type = (form.type.data or '').strip().lower()
+    clean_choices = form.cleaned_choices
+    normalized_indices = form.cleaned_correct_indices
+    points = form.points.data
+    time_limit = form.time_limit.data
+
+    existing_question = None
+    if question_id:
+        for question in questions:
+            if question.get('question_id') == question_id:
+                existing_question = question
+                break
+    else:
+        question_id = str(uuid.uuid4())
+
+    if existing_question is None:
+        order = max((question.get('order', -1) for question in questions), default=-1) + 1
+
+        questions.append({
+            'question_id': question_id,
+            'text': text,
+            'type': question_type,
+            'choices': clean_choices,
+            'correct_indices': normalized_indices,
+            'order': order,
+            'points': points,
+            'time_limit': time_limit,
+        })
+    else:
+        existing_question['text'] = text
+        existing_question['type'] = question_type
+        existing_question['choices'] = clean_choices
+        existing_question['correct_indices'] = normalized_indices
+        existing_question['points'] = points
+        existing_question['time_limit'] = time_limit
+
+    save_presentation(presentation)
+    return jsonify({'success': True, 'question_id': question_id})
 
 @routes.route('/presentations/<presentation_id>/delete', methods=['POST'])
 @require_instructor
