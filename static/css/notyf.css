@@ -20,12 +20,6 @@
     overflow: hidden;
 }
 
-@supports (backdrop-filter: blur(12px)) {
-    .notyf__toast {
-        background: color-mix(in srgb, var(--color-bg) 60%, transparent);
-    }
-}
-
 .notyf__toast::before {
     content: '';
     position: absolute;
@@ -49,6 +43,10 @@
     width: 24px;
     height: 24px;
     display: block;
+}
+
+.notyf__dismiss {
+    margin-right: 12px;
 }
 
 .notyf__progress-bar {
