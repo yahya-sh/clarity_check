@@ -6,38 +6,45 @@
         <div class="text-center mb-8">
             <img src="{{ url_for('static', filename='favicon.svg') }}" alt="ClarityCheck" class="w-16 h-16 mx-auto mb-4">
             <h1 class="text-3xl font-bold text-text mb-2">Join Session</h1>
-            <p class="text-muted">Enter your nickname to join the presentation</p>
+            <p class="text-muted">Enter your nickname and PIN code to join the presentation</p>
         </div>
 
         <div class="bg-surface/50 border border-border rounded-xl p-6">
-            <div class="mb-6">
+            <!-- Presentation Info Section -->
+            <div class="mb-6" id="presentationInfo"{% if presentation %} style="display: block;"{% else %} style="display: none;"{% endif %}>
                 <div class="bg-accent/10 border border-accent/20 rounded-lg p-4">
-                    <h2 class="font-semibold text-text mb-2">{{ presentation.title }}</h2>
-                    {% if presentation.description %}
-                        <p class="text-sm text-muted">{{ presentation.description }}</p>
-                    {% endif %}
+                    <h2 class="font-semibold text-text mb-2" id="presentationTitle">{% if presentation %}{{ presentation.title }}{% endif %}</h2>
+                    <p class="text-sm text-muted line-clamp-2" id="presentationDescription">{% if presentation and presentation.description %}{{ presentation.description }}{% endif %}</p>
                 </div>
             </div>
 
-            <form method="POST" class="space-y-4">
+            <form method="POST" class="space-y-4" id="joinForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="pin" value="{{ pin }}">
                 
                 <div>
                     <label for="nickname" class="block text-sm font-medium text-text mb-2">
                         Your Nickname
                     </label>
-                    <input 
-                        type="text" 
-                        id="nickname" 
-                        name="nickname" 
-                        required
-                        maxlength="20"
-                        class="w-full px-4 py-3 bg-background border border-border rounded-lg text-text placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors"
-                        placeholder="Enter your nickname"
-                        autocomplete="off"
-                    >
-                    <p class="text-xs text-muted mt-1">This will be visible to other participants</p>
+                    {{ form.nickname(class='w-full px-4 py-3 bg-background border border-border rounded-lg text-text placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors', placeholder='Enter your nickname', autocomplete='off') }}
+                    {% if form.nickname.errors %}
+                        {% for error in form.nickname.errors %}
+                            <p class="text-xs text-red-500 mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-xs text-muted mt-1">This will be visible to other participants</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="pin" class="block text-sm font-medium text-text mb-2">
+                        PIN Code
+                    </label>
+                    {{ form.pin(class='w-full px-4 py-3 bg-background border border-border rounded-lg text-text placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors', placeholder='Enter PIN code') }}
+                    {% if form.pin.errors %}
+                        {% for error in form.pin.errors %}
+                            <p class="text-xs text-red-500 mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
                 </div>
 
                 <button 
@@ -47,13 +54,6 @@
                     Join Session
                 </button>
             </form>
-
-            <div class="mt-6 pt-6 border-t border-border">
-                <div class="text-center">
-                    <p class="text-sm text-muted mb-2">Session PIN</p>
-                    <div class="text-2xl font-bold text-accent">{{ pin }}</div>
-                </div>
-            </div>
         </div>
 
         <div class="mt-6 text-center">
@@ -67,14 +67,84 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const nicknameInput = document.getElementById('nickname');
-    const form = nicknameInput.closest('form');
+    const pinInput = document.getElementById('pin');
+    const form = document.getElementById('joinForm');
+    const presentationInfo = document.getElementById('presentationInfo');
+    const presentationTitle = document.getElementById('presentationTitle');
+    const presentationDescription = document.getElementById('presentationDescription');
     
-    // Focus on nickname input
-    nicknameInput.focus();
+    let debounceTimer = null;
     
-    // Validate nickname on submit
+    // Load nickname from localStorage
+    const savedNickname = localStorage.getItem('joinNickname');
+    if (savedNickname) {
+        nicknameInput.value = savedNickname;
+    }
+    
+    // Focus on appropriate field
+    if (nicknameInput.value) {
+        pinInput.focus();
+    } else {
+        nicknameInput.focus();
+    }
+    
+    // Save nickname to localStorage on input
+    nicknameInput.addEventListener('input', function() {
+        localStorage.setItem('joinNickname', this.value);
+    });
+    
+    // Debounced PIN validation
+    pinInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        const pin = this.value.trim();
+        
+        if (pin.length < 3) {
+            presentationInfo.style.display = 'none';
+            return;
+        }
+        
+        debounceTimer = setTimeout(() => {
+            validatePin(pin);
+        }, 500);
+    });
+    
+    // PIN validation function
+    async function validatePin(pin) {
+        try {
+            const response = await fetch('/api/validate-pin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+                },
+                body: JSON.stringify({ pin: pin })
+            });
+            
+            if (response.status === 404) {
+                // Invalid PIN - hide presentation info
+                presentationInfo.style.display = 'none';
+                return;
+            }
+            
+            const data = await response.json();
+            
+            if (data.valid) {
+                presentationTitle.textContent = data.title;
+                presentationDescription.textContent = data.description || '';
+                presentationInfo.style.display = 'block';
+            } else {
+                presentationInfo.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error validating PIN:', error);
+            presentationInfo.style.display = 'none';
+        }
+    }
+    
+    // Form submission
     form.addEventListener('submit', function(e) {
         const nickname = nicknameInput.value.trim();
+        const pin = pinInput.value.trim();
         
         if (nickname.length < 2) {
             e.preventDefault();
@@ -94,11 +164,25 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Nickname can only contain letters, numbers, underscores, and hyphens.');
             return;
         }
+        
+        if (pin.length < 3) {
+            e.preventDefault();
+            alert('PIN code must be at least 3 characters long.');
+            return;
+        }
+        
+        // Save nickname to localStorage before submission
+        localStorage.setItem('joinNickname', nickname);
     });
     
     // Auto-format nickname
     nicknameInput.addEventListener('input', function() {
         this.value = this.value.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 20);
+    });
+    
+    // Auto-format PIN
+    pinInput.addEventListener('input', function() {
+        this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
     });
 });
 </script>
