@@ -147,27 +147,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const pin = pinInput.value.trim();
         
         if (nickname.length < 2) {
-            e.preventDefault();
-            alert('Nickname must be at least 2 characters long.');
             return;
         }
         
         if (nickname.length > 20) {
-            e.preventDefault();
-            alert('Nickname must be 20 characters or less.');
             return;
         }
         
         // Basic validation for inappropriate characters
         if (!/^[a-zA-Z0-9_-]+$/.test(nickname)) {
-            e.preventDefault();
-            alert('Nickname can only contain letters, numbers, underscores, and hyphens.');
             return;
         }
         
         if (pin.length < 3) {
-            e.preventDefault();
-            alert('PIN code must be at least 3 characters long.');
             return;
         }
         
