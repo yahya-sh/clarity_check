@@ -80,8 +80,10 @@
                             <div class="relative group/tooltip">
                                 <button
                                     type="button"
-                                    class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors cursor-pointer"
-                                    onclick="event.stopPropagation(); showDeleteModal('{{ url_for('instructor.delete_presentation_route', presentation_id=presentation.id) }}', '{{ csrf_token() }}')"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors cursor-pointer delete-presentation-btn"
+                                    onclick="event.stopPropagation();"
+                                    data-delete-url="{{ url_for('instructor.delete_presentation_route', presentation_id=presentation.id) }}"
+                                    data-csrf-token="{{ csrf_token() }}"
                                     aria-label="Delete presentation"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
@@ -150,80 +152,18 @@
         });
     })();
 
-    // Delete modal functions
-    function showDeleteModal(deleteUrl, csrfToken) {
-        const modal = document.getElementById('deleteModal');
-        const form = document.getElementById('deleteForm');
-        const csrfInput = document.getElementById('modalCsrfToken');
-        
-        form.action = deleteUrl;
-        csrfInput.value = csrfToken;
-        
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeDeleteModal() {
-        const modal = document.getElementById('deleteModal');
-        modal.classList.add('hidden');
-        document.body.style.overflow = 'auto';
-    }
-
-    function confirmDelete() {
-        const form = document.getElementById('deleteForm');
-        form.submit();
-    }
-
-    // Close modal when clicking outside
-    document.getElementById('deleteModal').addEventListener('click', function(event) {
-        if (event.target === this) {
-            closeDeleteModal();
-        }
-    });
-
-    // Close modal with Escape key
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            closeDeleteModal();
-        }
+    // Add event listeners for delete buttons
+    document.querySelectorAll('.delete-presentation-btn').forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.stopPropagation();
+            const deleteUrl = this.dataset.deleteUrl;
+            const csrfToken = this.dataset.csrfToken;
+            showConfirmDialog('Delete Presentation', 'Are you sure you want to delete this presentation? This action cannot be undone.', deleteUrl, csrfToken);
+        });
     });
     </script>
 
-<!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-surface border border-border rounded-xl shadow-2xl max-w-md w-full p-6">
-            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-500/20 rounded-full mb-4">
-                <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-text text-center mb-2">Delete Presentation</h3>
-            <p class="text-muted text-center mb-6">Are you sure you want to delete this presentation? This action cannot be undone.</p>
-            
-            <form id="deleteForm" method="POST" class="hidden">
-                <input type="hidden" name="csrf_token" id="modalCsrfToken">
-            </form>
-            
-            <div class="flex gap-3">
-                <button 
-                    type="button" 
-                    onclick="closeDeleteModal()"
-                    class="flex-1 px-4 py-2 text-text bg-secondary border border-border rounded-lg hover:bg-secondary/70 transition-colors font-medium cursor-pointer"
-                >
-                    Cancel
-                </button>
-                <button 
-                    type="button" 
-                    onclick="confirmDelete()"
-                    class="flex-1 px-4 py-2 text-white bg-red-600 border border-red-600 rounded-lg hover:bg-red-700 transition-colors font-medium cursor-pointer"
-                >
-                    Delete
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+{% include 'partials/_confirm_dialog.html' %}
 
 {% else %}
     <p>No user found.</p>
