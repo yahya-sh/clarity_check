@@ -3,6 +3,7 @@ import json
 import os
 from datetime import datetime
 from models.presentation import Presentation
+from repositories import runs
 
 def get_presentations_dir(username):
     """Get the presentations directory for a user"""
@@ -59,3 +60,46 @@ def delete_presentation(username, presentation_id):
         os.remove(path)
         return True
     return False
+
+def get_presentation_by_pin(pin_code):
+    """Find a presentation by its PIN code across all users
+    
+    Args:
+        pin_code: The PIN code to search for
+        
+    Returns:
+        Presentation object if found and valid, None otherwise
+    """
+    if not pin_code or not pin_code.strip():
+        return None
+    
+    pin_code = pin_code.strip()
+    all_run_paths = runs.get_all_run_paths_across_users()
+    
+    for run_path in all_run_paths:
+        try:
+            with open(run_path, 'r') as f:
+                run_data = json.load(f)
+            
+            if run_data.get('pin_code') == pin_code:
+                # Check if PIN is not expired
+                expires_at = run_data.get('expires_at')
+                if expires_at:
+                    try:
+                        expires_at_datetime = datetime.fromisoformat(expires_at)
+                        if expires_at_datetime > datetime.now():
+                            # PIN is valid, load the presentation
+                            presentation_uuid = run_data.get('presentation_uuid')
+                            if presentation_uuid:
+                                # Extract username from the file path
+                                # Path format: data/instructors/{username}/runs/{presentation_uuid}_{pin}.json
+                                path_parts = run_path.split(os.sep)
+                                if len(path_parts) >= 4 and path_parts[1] == 'instructors':
+                                    username = path_parts[2]
+                                    return load_presentation(username, presentation_uuid)
+                    except (ValueError, TypeError):
+                        continue
+        except (json.JSONDecodeError, FileNotFoundError):
+            continue
+    
+    return None
