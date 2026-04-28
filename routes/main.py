@@ -15,6 +15,9 @@ def index():
 def join_session():
     pin = request.args.get('pin', '').strip()
     presentation = get_presentation_by_pin(pin)
+    if not presentation:
+        flash('Presentation not found with this PIN.', 'error')
+        return redirect(url_for('main.index'))
     
     return render_template('join.html', presentation=presentation, pin=pin)
 
