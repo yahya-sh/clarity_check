@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='external/notyf/notyf.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/notyf.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body class="bg-bg text-text font-sans antialiased min-h-screen flex flex-col">
     {% include "partials/_header.html" %}
@@ -25,5 +26,6 @@
     <script src="{{ url_for('static', filename='external/notyf/notyf.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/notyf.js') }}"></script>
     <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>
