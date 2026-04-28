@@ -9,6 +9,7 @@ import qrcode
 import io
 import base64
 from repositories import users_repo, runs_repo, presentations_repo
+from repositories import sessions as sessions_repo
 
 from forms.question import SaveQuestionForm
 from models.presentation import Presentation
@@ -58,13 +59,13 @@ def get_presentation_pin(presentation: Presentation):
                     except (OSError, IOError):
                         # If file update fails, create new run data with preserved session_uuid
                         session_uuid = updated_run_data.get('session_uuid')
-                        runs_repo.save_run_data(username, presentation_uuid, new_pin, new_expires_at, session_uuid)
+                        runs_repo.save_run_data(username, presentation_uuid, session_uuid, new_pin, new_expires_at)
                     
                     return new_pin
                 else:
                     # If rename fails, create new run data with preserved session_uuid
-                    session_uuid = run_data.get('session_uuid')
-                    runs_repo.save_run_data(username, presentation_uuid, new_pin, new_expires_at, session_uuid)
+                    session_uuid = run_data.get('session_uuid') 
+                    runs_repo.save_run_data(username, presentation_uuid, session_uuid, new_pin, new_expires_at)
                     return new_pin
         except (ValueError, TypeError):
             pass
@@ -72,9 +73,10 @@ def get_presentation_pin(presentation: Presentation):
     # No existing run or invalid data, create new one
     pin = generate_unique_pin()
     expires_at = now + timedelta(minutes=30)
+    session_uuid = str(uuid.uuid4())
     
     # Save run data
-    runs_repo.save_run_data(username, presentation_uuid, pin, expires_at)
+    runs_repo.save_run_data(username, presentation_uuid, session_uuid, pin, expires_at)
     
     return pin
 
@@ -546,6 +548,9 @@ def refresh_pin(presentation_id):
     updated_run_data = result
     updated_run_data['expires_at'] = expires_at.isoformat()
     
+    # Clear participants list
+    updated_run_data['participants'] = []
+    
     # Save the updated data back to the file
     runs_dir = runs_repo.get_user_runs(username)
     new_file_path = f"{runs_dir}/{presentation_id}_{new_pin}.json"
@@ -605,3 +610,38 @@ def get_participants(presentation_id):
     
     participants = run_data.get('participants', [])
     return jsonify({'participants': participants})
+
+
+@routes.route('/presentations/<presentation_id>/start-session', methods=['POST'])
+@require_instructor
+def start_session(presentation_id):
+    """Start a new session for a presentation"""
+    username = session.get('username')
+    
+    try:
+        presentation = presentations_repo.load_presentation(username, presentation_id)
+    except (FileNotFoundError, KeyError, ValueError):
+        return jsonify({'error': 'Presentation not found.'}), 404
+    
+    # Check if presentation is published
+    if presentation.status != 'published':
+        return jsonify({'error': 'Presentation must be published to start a session.'}), 400
+    
+    # Get current run data to extract participants
+    run_data = runs_repo.load_run_data(username, presentation_id)
+    participants = run_data.get('participants', []) if run_data else []
+    
+    # Create new session
+    try:
+        session_data = sessions_repo.create_session(run_data['session_uuid'], username, presentation_id, participants)
+        
+        # Delete the presentation run after successful session creation
+        runs_repo.delete_run_data(username, presentation_id)
+        
+        return jsonify({
+            'success': True,
+            'session': session_data,
+            'message': 'Session started successfully!'
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to create session: {str(e)}'}), 500
