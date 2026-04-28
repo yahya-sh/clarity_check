@@ -1,10 +1,10 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from repositories.presentations import load_presentation, save_presentation
-from repositories.runs import get_all_runs_for_user, save_run_data, load_run_data
+from repositories.runs import save_run_data, load_run_data
 from datetime import datetime
-
+import json
+import os
 routes = Blueprint('main', __name__)
-
 
 @routes.route('/')
 def index():
@@ -20,7 +20,6 @@ def join_session():
         return redirect(url_for('main.index'))
     
     # Find run data with this PIN
-    import os
     
     run_data = None
     presentation = None

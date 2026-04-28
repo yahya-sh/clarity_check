@@ -2,20 +2,20 @@ import json
 import os
 from datetime import datetime
 
-def get_runs_dir(username):
+def get_user_runs(username):
     """Get the runs directory for a user"""
     runs_dir = f"data/instructors/{username}/runs"
     os.makedirs(runs_dir, exist_ok=True)
     return runs_dir
 
-def get_run_file_path(username, presentation_uuid):
+def get_run_file_path(username, presentation_uuid, pin_code):
     """Get the run file path for a presentation"""
-    runs_dir = get_runs_dir(username)
-    return f"{runs_dir}/{presentation_uuid}_pin.json"
+    runs_dir = get_user_runs(username)
+    return f"{runs_dir}/{presentation_uuid}_{pin_code}.json"
 
 def save_run_data(username, presentation_uuid, pin_code, expires_at):
     """Save run data to file"""
-    run_file = get_run_file_path(username, presentation_uuid)
+    run_file = get_run_file_path(username, presentation_uuid, pin_code)
     run_data = {
         'presentation_uuid': presentation_uuid,
         'pin_code': pin_code,
@@ -30,36 +30,49 @@ def save_run_data(username, presentation_uuid, pin_code, expires_at):
     return run_data
 
 def load_run_data(username, presentation_uuid):
-    """Load run data for a presentation"""
-    run_file = get_run_file_path(username, presentation_uuid)
+    """Load run data for a presentation by finding first run that starts with the UUID"""
+    runs_dir = get_user_runs(username)
     
-    if not os.path.exists(run_file):
+    if not os.path.exists(runs_dir):
         return None
     
-    try:
-        with open(run_file) as f:
-            return json.load(f)
-    except (json.JSONDecodeError, FileNotFoundError):
-        return None
+    # Find first file that starts with the presentation_uuid followed by underscore
+    for filename in os.listdir(runs_dir):
+        if filename.startswith(f"{presentation_uuid}_") and filename.endswith('.json'):
+            # Extract UUID part by removing the last underscore and extension
+            base_name = filename[:-5]  # Remove .json
+            uuid_part = base_name.split("_")[0]
+            if uuid_part == presentation_uuid:
+                try:
+                    filepath = os.path.join(runs_dir, filename)
+                    with open(filepath) as f:
+                        return json.load(f)
+                except (json.JSONDecodeError, FileNotFoundError):
+                    continue
+    
+    return None
 
 def delete_run_data(username, presentation_uuid):
     """Delete run data file"""
     run_file = get_run_file_path(username, presentation_uuid)
     if os.path.exists(run_file):
-        os.remove(run_file)
-        return True
+        try:
+            os.remove(run_file)
+            return True
+        except:
+            return False
     return False
 
-def get_all_runs_for_user(username):
+def get_all_runs_for_user(username: str) -> list:
     """Get all run files for a user"""
-    runs_dir = get_runs_dir(username)
+    runs_dir = get_user_runs(username)
     runs = []
     
     if not os.path.exists(runs_dir):
         return runs
     
     for filename in os.listdir(runs_dir):
-        if filename.endswith('_pin.json'):
+        if filename.endswith('.json'):
             try:
                 filepath = os.path.join(runs_dir, filename)
                 with open(filepath) as f:
@@ -70,17 +83,25 @@ def get_all_runs_for_user(username):
     
     return runs
 
-def pin_exists_for_user(username, pin_code):
-    """Check if PIN code already exists for any of user's runs"""
-    runs = get_all_runs_for_user(username)
-    for run in runs:
-        if run.get('pin_code') == pin_code:
-            try:
-                expires_at = datetime.fromisoformat(run.get('expires_at'))
-                if expires_at > datetime.now():
-                    return True  # PIN exists and is not expired
-            except (ValueError, TypeError):
-                continue
+def pin_exists(pin_code):
+    """Check if PIN code already exists across all users' runs"""
+    all_run_paths = get_all_run_paths_across_users()
+    
+    for run_path in all_run_paths:
+        try:
+            with open(run_path, 'r') as f:
+                run_data = json.load(f)
+                
+            if run_data.get('pin_code') == pin_code:
+                try:
+                    expires_at = datetime.fromisoformat(run_data.get('expires_at'))
+                    if expires_at > datetime.now():
+                        return True  # PIN exists and is not expired
+                except (ValueError, TypeError):
+                    continue
+        except (json.JSONDecodeError, FileNotFoundError):
+            continue
+    
     return False
 
 def cleanup_expired_runs(username):
@@ -96,3 +117,25 @@ def cleanup_expired_runs(username):
                     delete_run_data(username, presentation_uuid)
         except (ValueError, TypeError):
             continue
+
+def get_all_run_paths_across_users():
+    """Get all run file paths across all users"""
+    all_run_paths = []
+    instructors_dir = "data/instructors"
+    
+    if not os.path.exists(instructors_dir):
+        return all_run_paths
+    
+    # Iterate through all user directories
+    for username in os.listdir(instructors_dir):
+        user_dir = os.path.join(instructors_dir, username)
+        if os.path.isdir(user_dir):
+            runs_dir = os.path.join(user_dir, "runs")
+            if os.path.exists(runs_dir):
+                # Get all JSON files in the runs directory
+                for filename in os.listdir(runs_dir):
+                    if filename.endswith('.json'):
+                        filepath = os.path.join(runs_dir, filename)
+                        all_run_paths.append(filepath)
+    
+    return all_run_paths

@@ -18,7 +18,7 @@ def generate_pin_code():
     """Generate a 6-digit PIN code"""
     return ''.join(random.choices(string.digits, k=6))
 
-def get_or_create_pin(presentation):
+def get_or_create_pin(presentation: Presentation):
     """Get existing PIN or create new one if expired or missing"""
     username = presentation.username
     presentation_uuid = presentation.id
@@ -38,7 +38,7 @@ def get_or_create_pin(presentation):
             pass
     
     # Generate unique PIN
-    pin = generate_unique_pin(username)
+    pin = generate_unique_pin()
     expires_at = now + timedelta(minutes=30)
     
     # Save run data
@@ -46,14 +46,14 @@ def get_or_create_pin(presentation):
     
     return pin
 
-def generate_unique_pin(username):
-    """Generate a unique PIN code for the user"""
+def generate_unique_pin():
+    """Generate a unique PIN code"""
     max_attempts = 100
     attempts = 0
     
     while attempts < max_attempts:
         pin = generate_pin_code()
-        if not runs_repo.pin_exists_for_user(username, pin):
+        if not runs_repo.pin_exists(pin):
             return pin
         attempts += 1
     
@@ -326,7 +326,7 @@ def save_question_route(presentation_id, objective_id):
         objective['questions'] = questions
 
     # Instructor username is passed to the form instance for context-sensitive validation/logic.
-    form = SaveQuestionForm(formdata=request.form, meta={'csrf': False}, instructor_username=username)
+    form = SaveQuestionForm(formdata=request.form, instructor_username=username)
     if not form.validate():
         first_error = next((errors[0] for errors in form.errors.values() if errors), 'Invalid question payload.')
         return jsonify({'error': first_error}), 400
