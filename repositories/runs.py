@@ -16,12 +16,12 @@ def get_run_file_path(username, presentation_uuid, pin_code):
     runs_dir = get_user_runs(username)
     return f"{runs_dir}/{presentation_uuid}_{pin_code}.json"
 
-def save_run_data(username, presentation_uuid, pin_code, expires_at: datetime, created_at: str = None, participants: list = None):
+def save_run_data(username: str, presentation_uuid: str, session_uuid: str, pin_code: str, expires_at: datetime, created_at: str = None, participants: list = None):
     """Save run data to file"""
     run_file = get_run_file_path(username, presentation_uuid, pin_code)
     
     run_data = {
-        'session_uuid': str(uuid.uuid4()),
+        'session_uuid': session_uuid,
         'presentation_uuid': presentation_uuid,
         'pin_code': pin_code,
         'expires_at': expires_at.isoformat(),
@@ -59,14 +59,22 @@ def load_run_data(username, presentation_uuid):
     return None
 
 def delete_run_data(username, presentation_uuid):
-    """Delete run data file"""
-    run_file = get_run_file_path(username, presentation_uuid)
-    if os.path.exists(run_file):
-        try:
-            os.remove(run_file)
-            return True
-        except:
-            return False
+    """Delete run data file for a presentation"""
+    runs_dir = get_user_runs(username)
+    
+    if not os.path.exists(runs_dir):
+        return False
+    
+    # Find and delete the run file that starts with the presentation_uuid
+    for filename in os.listdir(runs_dir):
+        if filename.startswith(f"{presentation_uuid}_") and filename.endswith('.json'):
+            filepath = os.path.join(runs_dir, filename)
+            try:
+                os.remove(filepath)
+                return True
+            except OSError:
+                return False
+    
     return False
 
 def rename_run_file(username, presentation_uuid, old_pin_code, new_pin_code):
@@ -202,15 +210,21 @@ def join_participant(run: dict, nickname: str) -> Participant:
     # Create participant object with session_uuid from run
     participant = Participant(
         session_uuid=run['session_uuid'],
-        nickname=nickname
+        nickname=nickname,
+        presentation_uuid=run['presentation_uuid'],
+        presentation_instructor_username=run['username']
     )
     
     # Add participant to run's participants list
     if 'participants' not in run:
         run['participants'] = []
-    
-    run['participants'].append(participant.to_dict())
-    save_run_data(run['username'], run['presentation_uuid'], run['pin_code'], datetime.fromisoformat(run['expires_at']), run['created_at'], run['participants'])
+    participant_dict = participant.to_dict()
+    # remove session uuid
+    participant_dict.pop('session_uuid')
+    participant_dict.pop('presentation_uuid')
+    participant_dict.pop('presentation_instructor_username')
+    run['participants'].append(participant_dict)
+    save_run_data(run['username'], run['presentation_uuid'], run['session_uuid'], run['pin_code'], datetime.fromisoformat(run['expires_at']), run['created_at'], run['participants'])
     
     return participant
     
