@@ -52,7 +52,7 @@
             <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {% for presentation in presentations %}
                     <div
-                        class="group relative p-6 bg-surface/50 border border-border rounded-xl hover:bg-surface/70 transition-colors cursor-pointer"
+                        class="group relative px-6 pt-12 pb-6 bg-surface/50 border border-border rounded-xl hover:bg-surface/70 transition-colors cursor-pointer"
                         data-presentation-href="{{ url_for('instructor.presentation_page', presentation_id=presentation.id) }}"
                         tabindex="0"
                         role="link"
