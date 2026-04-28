@@ -37,6 +37,22 @@
 .animate-fade-in {
     animation: fade-in 1s ease-out;
 }
+
+.description-truncated {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.description-expanded {
+    display: block;
+}
+
+.toggle-icon-rotated {
+    transform: rotate(180deg);
+}
 </style>
 
 <input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
@@ -60,7 +76,15 @@
                     </div>
                     <h1 class="text-4xl font-bold text-text mb-3 tracking-tight">{{ presentation.title }}</h1>
                     {% if presentation.description %}
-                        <p class="text-lg text-muted leading-relaxed">{{ presentation.description }}</p>
+                        <div class="description-container">
+                            <p id="descriptionText" class="text-lg text-muted leading-relaxed">{{ presentation.description }}</p>
+                            {% if presentation.description|length > 150 %}
+                                <button id="descriptionToggle" class="text-sm text-accent hover:text-accent/80 font-medium mt-2 cursor-pointer transition-colors">
+                                    <span id="toggleText">Show more</span>
+                                    <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block ml-1 transition-transform"><path d="M6 9l6 6 6-6"/></svg>
+                                </button>
+                            {% endif %}
+                        </div>
                     {% endif %}
                     <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mt-6">
                         <div class="flex items-center gap-2">
@@ -244,9 +268,52 @@ document.addEventListener('DOMContentLoaded', function() {
     const pinCodeElement = document.getElementById('pinCode');
     const countdownText = document.getElementById('countdownText');
     const countdownElement = document.getElementById('countdown');
+    const descriptionToggle = document.getElementById('descriptionToggle');
+    const descriptionText = document.getElementById('descriptionText');
+    const toggleText = document.getElementById('toggleText');
+    const toggleIcon = document.getElementById('toggleIcon');
     
     let countdownInterval;
     let expiresAt;
+    let isDescriptionExpanded = false;
+    
+    // Initialize description truncation
+    function initializeDescription() {
+        if (descriptionText && descriptionToggle) {
+            const textLength = descriptionText.textContent.length;
+            if (textLength > 150) {
+                descriptionText.classList.add('description-truncated');
+                isDescriptionExpanded = false;
+            } else {
+                // Hide toggle button for short descriptions
+                descriptionToggle.style.display = 'none';
+            }
+        }
+    }
+    
+    // Toggle description expansion
+    function toggleDescription() {
+        if (!descriptionText || !descriptionToggle) return;
+        
+        if (isDescriptionExpanded) {
+            descriptionText.classList.remove('description-expanded');
+            descriptionText.classList.add('description-truncated');
+            toggleText.textContent = 'Show more';
+            toggleIcon.classList.remove('toggle-icon-rotated');
+        } else {
+            descriptionText.classList.remove('description-truncated');
+            descriptionText.classList.add('description-expanded');
+            toggleText.textContent = 'Show less';
+            toggleIcon.classList.add('toggle-icon-rotated');
+        }
+        
+        isDescriptionExpanded = !isDescriptionExpanded;
+    }
+    
+    // Add event listener for description toggle
+    if (descriptionToggle) {
+        descriptionToggle.addEventListener('click', toggleDescription);
+    }
     
     // Initialize countdown timer
     function startCountdown(expiresAtTime) {
@@ -477,6 +544,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Start the refresh
     startParticipantsRefresh();
+    
+    // Initialize description truncation
+    initializeDescription();
 });
 </script>
 {% endblock %}
