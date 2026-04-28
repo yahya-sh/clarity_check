@@ -63,6 +63,34 @@ def delete_run_data(username, presentation_uuid):
             return False
     return False
 
+def rename_run_file(username, presentation_uuid, old_pin_code, new_pin_code):
+    """Rename run file from old PIN to new PIN and update the PIN code in the file"""
+    runs_dir = get_user_runs(username)
+    old_file_path = f"{runs_dir}/{presentation_uuid}_{old_pin_code}.json"
+    new_file_path = f"{runs_dir}/{presentation_uuid}_{new_pin_code}.json"
+    
+    if not os.path.exists(old_file_path):
+        return False, "Old run file not found"
+    
+    try:
+        # Load the existing run data
+        with open(old_file_path, 'r') as f:
+            run_data = json.load(f)
+        
+        # Update the PIN code in the data
+        run_data['pin_code'] = new_pin_code
+        
+        # Save to new file with updated PIN
+        with open(new_file_path, 'w') as f:
+            json.dump(run_data, f, indent=2)
+        
+        # Remove the old file
+        os.remove(old_file_path)
+        
+        return True, run_data
+    except (json.JSONDecodeError, FileNotFoundError, OSError) as e:
+        return False, f"Error renaming run file: {str(e)}"
+
 def get_all_runs_for_user(username: str) -> list:
     """Get all run files for a user"""
     runs_dir = get_user_runs(username)

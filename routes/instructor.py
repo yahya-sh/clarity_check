@@ -3,6 +3,7 @@ from functools import wraps
 import uuid
 import random
 import string
+import json
 from datetime import datetime, timedelta
 import qrcode
 import io
@@ -492,19 +493,43 @@ def refresh_pin(presentation_id):
     if presentation.status != 'published':
         return jsonify({'error': 'Presentation must be published to refresh PIN.'}), 400
     
+    # Get existing run data to find current PIN
+    existing_run_data = runs_repo.load_run_data(username, presentation_id)
+    if not existing_run_data:
+        return jsonify({'error': 'No active session found.'}), 404
+    
+    old_pin = existing_run_data.get('pin_code')
+    if not old_pin:
+        return jsonify({'error': 'No PIN code found in existing session.'}), 400
+    
     # Generate new PIN and expiration
-    pin = generate_unique_pin(username)
+    new_pin = generate_unique_pin()
     expires_at = datetime.now() + timedelta(minutes=30)
     
-    # Save new run data
-    runs_repo.save_run_data(username, presentation_id, pin, expires_at)
+    # Rename the run file and update PIN code and expiration
+    success, result = runs_repo.rename_run_file(username, presentation_id, old_pin, new_pin)
+    if not success:
+        return jsonify({'error': result}), 500
+    
+    # Update the expiration time in the renamed file
+    updated_run_data = result
+    updated_run_data['expires_at'] = expires_at.isoformat()
+    
+    # Save the updated data back to the file
+    runs_dir = runs_repo.get_user_runs(username)
+    new_file_path = f"{runs_dir}/{presentation_id}_{new_pin}.json"
+    try:
+        with open(new_file_path, 'w') as f:
+            json.dump(updated_run_data, f, indent=2)
+    except (OSError, IOError) as e:
+        return jsonify({'error': f'Failed to update expiration time: {str(e)}'}), 500
     
     # Generate new join URL and QR code
-    join_url = url_for('main.join_session', pin=pin, _external=True)
+    join_url = url_for('main.join_session', pin=new_pin, _external=True)
     qr_code_data = generate_qr_code(join_url)
     
     return jsonify({
-        'pin': pin,
+        'pin': new_pin,
         'expires_at': expires_at.isoformat(),
         'join_url': join_url,
         'qr_code': qr_code_data
