@@ -25,6 +25,11 @@ def get_session_file_path(username: str, presentation_uuid: str, session_uuid: s
 def create_session(session_uuid, username: str, presentation_uuid: str, participants: List[Dict] = None) -> Dict:
     """Create a new session and return session data"""
     created_at = datetime.now().isoformat()
+
+    # reappend session uuid to participants
+    if participants:
+        for participant in participants:
+            participant['session_uuid'] = session_uuid
     
     session_data = {
         'session_uuid': session_uuid,
