@@ -19,8 +19,8 @@ def generate_pin_code():
     """Generate a 6-digit PIN code"""
     return ''.join(random.choices(string.digits, k=6))
 
-def get_or_create_pin(presentation: Presentation):
-    """Get existing PIN or create new one if expired or missing"""
+def get_presentation_pin(presentation: Presentation):
+    """Get existing PIN for presentation, renew if expired, or create new one"""
     username = presentation.username
     presentation_uuid = presentation.id
     now = datetime.now()
@@ -34,11 +34,40 @@ def get_or_create_pin(presentation: Presentation):
         try:
             expires_at = datetime.fromisoformat(run_data.get('expires_at'))
             if expires_at > now:
+                # PIN is still valid, return it
                 return run_data.get('pin_code')
+            else:
+                # PIN is expired, renew it
+                old_pin = run_data.get('pin_code')
+                new_pin = generate_unique_pin()
+                new_expires_at = now + timedelta(minutes=30)
+                
+                # Rename the file and update PIN and expiration
+                success, result = runs_repo.rename_run_file(username, presentation_uuid, old_pin, new_pin)
+                if success:
+                    # Update the expiration time in the renamed file
+                    updated_run_data = result
+                    updated_run_data['expires_at'] = new_expires_at.isoformat()
+                    
+                    # Save the updated data back to the file
+                    runs_dir = runs_repo.get_user_runs(username)
+                    new_file_path = f"{runs_dir}/{presentation_uuid}_{new_pin}.json"
+                    try:
+                        with open(new_file_path, 'w') as f:
+                            json.dump(updated_run_data, f, indent=2)
+                    except (OSError, IOError):
+                        # If file update fails, create new run data
+                        runs_repo.save_run_data(username, presentation_uuid, new_pin, new_expires_at)
+                    
+                    return new_pin
+                else:
+                    # If rename fails, create new run data
+                    runs_repo.save_run_data(username, presentation_uuid, new_pin, new_expires_at)
+                    return new_pin
         except (ValueError, TypeError):
             pass
     
-    # Generate unique PIN
+    # No existing run or invalid data, create new one
     pin = generate_unique_pin()
     expires_at = now + timedelta(minutes=30)
     
@@ -450,8 +479,8 @@ def run_presentation(presentation_id):
         flash('Presentation must be published to run a session.', 'error')
         return redirect(url_for('instructor.presentation_page', presentation_id=presentation_id))
     
-    # Get or create PIN
-    pin = get_or_create_pin(presentation)
+    # Get presentation PIN
+    pin = get_presentation_pin(presentation)
     
     # Generate join URL and QR code
     join_url = url_for('main.join_session', pin=pin, _external=True)
