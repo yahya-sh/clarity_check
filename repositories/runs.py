@@ -1,6 +1,9 @@
 import json
 import os
+import uuid
 from datetime import datetime
+
+from models.participant import Participant
 
 def get_user_runs(username):
     """Get the runs directory for a user"""
@@ -13,15 +16,18 @@ def get_run_file_path(username, presentation_uuid, pin_code):
     runs_dir = get_user_runs(username)
     return f"{runs_dir}/{presentation_uuid}_{pin_code}.json"
 
-def save_run_data(username, presentation_uuid, pin_code, expires_at):
+def save_run_data(username, presentation_uuid, pin_code, expires_at: datetime, created_at: str = None, participants: list = None):
     """Save run data to file"""
     run_file = get_run_file_path(username, presentation_uuid, pin_code)
+    
     run_data = {
+        'session_uuid': str(uuid.uuid4()),
         'presentation_uuid': presentation_uuid,
         'pin_code': pin_code,
-        'expires_at': expires_at.isoformat() if expires_at else None,
-        'created_at': datetime.now().isoformat(),
-        'participants': []
+        'expires_at': expires_at.isoformat(),
+        'created_at': created_at if created_at else datetime.now().isoformat(),
+        'username': username,
+        'participants': participants if participants else []
     }
     
     with open(run_file, 'w') as f:
@@ -77,10 +83,10 @@ def rename_run_file(username, presentation_uuid, old_pin_code, new_pin_code):
         with open(old_file_path, 'r') as f:
             run_data = json.load(f)
         
-        # Update the PIN code in the data
+        # Update the PIN code in the data but preserve session_uuid
         run_data['pin_code'] = new_pin_code
         
-        # Save to new file with updated PIN
+        # Save to new file with updated PIN (session_uuid remains unchanged)
         with open(new_file_path, 'w') as f:
             json.dump(run_data, f, indent=2)
         
@@ -146,6 +152,29 @@ def cleanup_expired_runs(username):
         except (ValueError, TypeError):
             continue
 
+def get_unexpired_run_by_pin(pin_code):
+    """Get unexpired run data by PIN code across all users"""
+    all_run_paths = get_all_run_paths_across_users()
+    
+    for run_path in all_run_paths:
+        try:
+            with open(run_path, 'r') as f:
+                run_data = json.load(f)
+                
+            if run_data.get('pin_code') == pin_code:
+                # Check if the run is not expired
+                try:
+                    expires_at = datetime.fromisoformat(run_data.get('expires_at'))
+                    if expires_at > datetime.now():
+                        return run_data
+                except (ValueError, TypeError):
+                    # If no expiration or invalid format, return the run
+                    return run_data
+        except (json.JSONDecodeError, FileNotFoundError):
+            continue
+    
+    return None
+
 def get_all_run_paths_across_users():
     """Get all run file paths across all users"""
     all_run_paths = []
@@ -167,3 +196,21 @@ def get_all_run_paths_across_users():
                         all_run_paths.append(filepath)
     
     return all_run_paths
+
+def join_participant(run: dict, nickname: str) -> Participant:
+    """Create a participant, add them to the run, and return the participant object"""
+    # Create participant object with session_uuid from run
+    participant = Participant(
+        session_uuid=run['session_uuid'],
+        nickname=nickname
+    )
+    
+    # Add participant to run's participants list
+    if 'participants' not in run:
+        run['participants'] = []
+    
+    run['participants'].append(participant.to_dict())
+    save_run_data(run['username'], run['presentation_uuid'], run['pin_code'], datetime.fromisoformat(run['expires_at']), run['created_at'], run['participants'])
+    
+    return participant
+    

@@ -56,13 +56,15 @@ def get_presentation_pin(presentation: Presentation):
                         with open(new_file_path, 'w') as f:
                             json.dump(updated_run_data, f, indent=2)
                     except (OSError, IOError):
-                        # If file update fails, create new run data
-                        runs_repo.save_run_data(username, presentation_uuid, new_pin, new_expires_at)
+                        # If file update fails, create new run data with preserved session_uuid
+                        session_uuid = updated_run_data.get('session_uuid')
+                        runs_repo.save_run_data(username, presentation_uuid, new_pin, new_expires_at, session_uuid)
                     
                     return new_pin
                 else:
-                    # If rename fails, create new run data
-                    runs_repo.save_run_data(username, presentation_uuid, new_pin, new_expires_at)
+                    # If rename fails, create new run data with preserved session_uuid
+                    session_uuid = run_data.get('session_uuid')
+                    runs_repo.save_run_data(username, presentation_uuid, new_pin, new_expires_at, session_uuid)
                     return new_pin
         except (ValueError, TypeError):
             pass

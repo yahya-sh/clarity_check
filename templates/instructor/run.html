@@ -489,11 +489,6 @@ document.addEventListener('DOMContentLoaded', function() {
             !lastKnownParticipants.some(lp => lp.nickname === p.nickname)
         );
         
-        if (newParticipants.length > 0) {
-            const names = newParticipants.map(p => p.nickname).join(', ');
-            showNotification(`${newParticipants.length} new participant${newParticipants.length > 1 ? 's' : ''} joined: ${names}`, 'success');
-        }
-        
         lastKnownParticipants = [...participants];
     }
     
