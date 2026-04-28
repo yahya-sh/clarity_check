@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, session
 from repositories.presentations import load_presentation, save_presentation, get_presentation_by_pin
 from repositories.runs import get_unexpired_run_by_pin, join_participant, save_run_data, load_run_data, get_all_run_paths_across_users
 from forms.join import JoinForm
@@ -62,9 +62,15 @@ def handle_join():
         return redirect(url_for('main.join_session'))
     
     participant = join_participant(run, nickname)
+
+    # Store participant data in session (similar to instructor login)
+    session['participant_uuid'] = participant.uuid
+    session['participant_session_uuid'] = participant.session_uuid
+    session['participant_nickname'] = nickname
+    session.permanent = True
     
     # Redirect to the joined session
-    return redirect(url_for('main.joined_session', session_uuid=participant.uuid))
+    return redirect(url_for('main.joined_session', session_uuid=participant.session_uuid))
 
 
 @routes.route('/joined/<session_uuid>')
