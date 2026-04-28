@@ -51,73 +51,14 @@ def handle_join():
     
     if not form.validate():
         flash('Please correct the errors below.', 'error')
-        return render_template('join.html', form=form, presentation=None, pin='')
+        return render_template('join.html', form=form, presentation=None)
     
-    pin = form.pin.data.strip()
+    pin = str(form.pin.data)
     nickname = form.nickname.data.strip()
+
+    presentation = get_presentation_by_pin(pin)
+    if not presentation:
+        flash('Presentation not found with this PIN.', 'error')
+        return redirect(url_for('main.join_session'))
     
-    # Find and update run data
-    import os
-    import json
-    
-    run_data = None
-    run_path = None
-    presentation = None
-    instructors_dir = "data/instructors"
-    
-    if os.path.exists(instructors_dir):
-        for username in os.listdir(instructors_dir):
-            runs_dir = os.path.join(instructors_dir, username, "runs")
-            if os.path.exists(runs_dir):
-                for filename in os.listdir(runs_dir):
-                    if filename.endswith('_pin.json'):
-                        try:
-                            filepath = os.path.join(runs_dir, filename)
-                            with open(filepath) as f:
-                                data = json.load(f)
-                                
-                            if data.get('pin_code') == pin:
-                                pin_expires_at = data.get('expires_at')
-                                if pin_expires_at:
-                                    try:
-                                        expires_at = datetime.fromisoformat(pin_expires_at)
-                                        if expires_at > datetime.now():
-                                            run_path = filepath
-                                            run_data = data
-                                            
-                                            # Check if nickname already exists
-                                            existing_nicknames = [p.get('nickname', '') for p in run_data.get('participants', [])]
-                                            if nickname in existing_nicknames:
-                                                flash('This nickname is already taken. Please choose another.', 'error')
-                                                return redirect(url_for('main.join_session', pin=pin))
-                                            
-                                            # Add new participant
-                                            run_data['participants'].append({
-                                                'nickname': nickname,
-                                                'joined_at': datetime.now().isoformat()
-                                            })
-                                            
-                                            # Save updated run data
-                                            with open(filepath, 'w') as f:
-                                                json.dump(run_data, f, indent=2)
-                                            
-                                            # Load associated presentation
-                                            presentation_uuid = run_data.get('presentation_uuid')
-                                            if presentation_uuid:
-                                                presentation = load_presentation(username, presentation_uuid)
-                                            
-                                            flash(f'Successfully joined as {nickname}!', 'success')
-                                            return render_template('joined.html', presentation=presentation, nickname=nickname)
-                                            
-                                    except ValueError:
-                                        continue
-                        except (json.JSONDecodeError, KeyError):
-                            continue
-                    
-                    if run_path:
-                        break
-                if run_path:
-                    break
-    
-    flash('Invalid or expired PIN.', 'error')
-    return redirect(url_for('main.index'))
+    return render_template('joined.html', presentation=presentation, nickname=nickname)

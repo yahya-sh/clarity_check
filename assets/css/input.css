@@ -33,3 +33,16 @@
 /* Tell Tailwind where to scan */
 @source "../../templates/**/*.html";
 @source "../../static/js/**/*.js";
+
+
+@layer components {
+  .no-spinner::-webkit-outer-spin-button,
+  .no-spinner::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .no-spinner[type='number'] {
+    -moz-appearance: textfield;
+  }
+}
