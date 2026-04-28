@@ -379,6 +379,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 pinCodeElement.textContent = data.pin;
                 startCountdown(data.expires_at);
+                fetchParticipants();
                 
                 // Update QR code
                 const qrImg = document.querySelector('img[alt="QR Code for joining session"]');
@@ -416,18 +417,47 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Start session button functionality
-    startSessionBtn.addEventListener('click', function() {
+    startSessionBtn.addEventListener('click', async function() {
         this.disabled = true;
         this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Starting...';
         
-        // TODO: Implement session start logic
-        // For now, just show a message
-        setTimeout(() => {
+        try {
+            // Get CSRF token from hidden input
+            const csrfToken = document.getElementById('csrfToken').value;
+            
+            const response = await fetch(`/presentations/{{ presentation.id }}/start-session`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                // Session created successfully
+                console.log('Session created:', data.session);
+                
+                // Update button to show session is active
+                this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Session Active';
+                this.classList.remove('animate-pulse-scale');
+                this.classList.add('bg-green-600', 'hover:bg-green-700');
+                
+                showNotification('Session started successfully!', 'success');
+                
+                // TODO: Navigate to session management or question display
+                // For now, keep showing the run page with active session
+            } else {
+                showNotification(data.error || 'Failed to start session', 'error');
+                this.disabled = false;
+                this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start Session';
+            }
+        } catch (error) {
+            showNotification('Error starting session', 'error');
             this.disabled = false;
             this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start Session';
-            
-            showNotification('Session starting soon... (Feature coming in next update)', 'info');
-        }, 1000);
+        }
     });
     
     // Initialize countdown with current PIN expiration
@@ -451,7 +481,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const participantsSection = document.getElementById('participantsSection');
         if (!participantsSection) return;
         
-        const participantsGrid = participantsSection.querySelector('.grid');
+        // Find or create the content area (after the header)
+        let contentArea = participantsSection.querySelector('.grid');
+        if (!contentArea) {
+            contentArea = participantsSection.querySelector('.text-center');
+        }
+        
         const countElement = participantsSection.querySelector('.text-sm.text-muted');
         
         // Update count
@@ -461,9 +496,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (participants.length === 0) {
             // Show empty state
-            if (participantsGrid) {
-                participantsGrid.innerHTML = `
-                    <div class="text-center py-8 text-muted col-span-full">
+            if (contentArea) {
+                contentArea.outerHTML = `
+                    <div class="text-center py-8 text-muted">
                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                         <p class="text-sm">No participants yet</p>
                         <p class="text-xs mt-1">Share the join link to get started</p>
@@ -472,15 +507,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             // Show participants grid
-            if (participantsGrid) {
-                participantsGrid.innerHTML = participants.map(participant => `
-                    <div class="bg-background border border-border rounded-lg p-3 flex items-center gap-2 animate-fade-in">
-                        <div class="w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center text-sm font-medium">
-                            ${participant.nickname[0].toUpperCase()}
-                        </div>
-                        <span class="text-sm text-text">${participant.nickname}</span>
+            if (contentArea) {
+                contentArea.outerHTML = `
+                    <div class="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                        ${participants.map(participant => `
+                            <div class="bg-background border border-border rounded-lg p-3 flex items-center gap-2 animate-fade-in">
+                                <div class="w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center text-sm font-medium">
+                                    ${participant.nickname[0].toUpperCase()}
+                                </div>
+                                <span class="text-sm text-text">${participant.nickname}</span>
+                            </div>
+                        `).join('')}
                     </div>
-                `).join('');
+                `;
             }
         }
         
