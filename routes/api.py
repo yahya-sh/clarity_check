@@ -31,6 +31,37 @@ def validate_pin():
 
 # ── Participant API Endpoints ───────────────────────────────────────────────
 
+@routes.route('/submit-answer', methods=['POST'])
+@require_participant
+def submit_answer():
+    """API endpoint for participants to submit their answers."""
+    try:
+        data = request.get_json()
+        choices = data.get('choices', [])
+        question_uuid = data.get('question_uuid')
+        
+        if not choices or not question_uuid:
+            return ResponseUtils.error_response("Missing required fields: choices and question_uuid", 400)
+        
+        # Here you would typically save the answer to a database or file
+        # For now, we'll just return a success response
+        # In a real implementation, you might want to:
+        # 1. Validate the question belongs to the current session
+        # 2. Save the participant's answer
+        # 3. Update any scoring or tracking systems
+        
+        # Log the answer for debugging (remove in production)
+        print(f"Answer submitted: participant={g.participant.session_uuid}, question={question_uuid}, choices={choices}")
+        
+        return ResponseUtils.success_response({
+            'message': 'Answer submitted successfully',
+            'choices': choices,
+            'question_uuid': question_uuid
+        })
+        
+    except Exception as e:
+        return ResponseUtils.error_response(f"Failed to submit answer: {str(e)}", 500)
+
 @routes.route('/check-session-status', methods=['POST'])
 @require_participant
 def check_session_status():
@@ -42,11 +73,60 @@ def check_session_status():
             g.participant.session_uuid
         )
         
-        if not success or session_data.get('status') != 'active':        
-            return ResponseUtils.session_status_response(False, 'waiting')
-        else:
-            # Format the response using ResponseUtils
-            return ResponseUtils.session_status_response(True, 'active')
+        if not success:
+            return ResponseUtils.session_status_response(False, 'error', error_message)
+        
+        # Get timing information for active sessions
+        timing_info = None
+        current_question = None
+        is_time_expired = False
+        
+        if session_data.get('status') == 'active':
+            try:
+                from services.live_session_service import LiveSessionService
+                timing_info = LiveSessionService.get_session_timing(
+                    g.participant.presentation_instructor_username,
+                    g.participant.presentation_uuid,
+                    g.participant.session_uuid
+                )
+                
+                # Check if timing has expired
+                is_time_expired = LiveSessionService.is_question_time_expired(
+                    g.participant.presentation_instructor_username,
+                    g.participant.presentation_uuid,
+                    g.participant.session_uuid
+                )
+                
+                # Get current question data if available
+                if timing_info.get('current_question_uuid'):
+                    current_question = LiveSessionService.get_current_question(
+                        g.participant.presentation_instructor_username,
+                        g.participant.presentation_uuid,
+                        g.participant.session_uuid
+                    )
+                    
+            except Exception:
+                # If timing service fails, continue without timing info
+                pass
+        
+        # Check if there's a new question (different from current)
+        has_new_question = False
+        if timing_info and timing_info.get('current_question_uuid'):
+            # Compare with any stored previous question UUID if available
+            # For now, we'll just check if there's a current question
+            has_new_question = True
+        
+        # Build enhanced response
+        response_data = {
+            'success': True,
+            'status': session_data.get('status', 'unknown'),
+            'has_new_question': has_new_question,
+            'is_time_expired': is_time_expired,
+            'timing_info': timing_info,
+            'current_question': current_question
+        }
+        
+        return jsonify(response_data)
             
     except Exception as e:
         return ResponseUtils.error_response(f"Failed to check session status: {str(e)}", 500)
