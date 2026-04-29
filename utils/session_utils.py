@@ -11,7 +11,8 @@ from config.constants import (
     PARTICIPANT_SESSION_KEYS,
     FLASH_ERROR,
     FLASH_INFO,
-    ERROR_SESSION_NOT_FOUND
+    ERROR_SESSION_NOT_FOUND,
+    SESSION_DONE
 )
 from repositories import users_repo
 from repositories.sessions import load_session
@@ -130,9 +131,7 @@ def validate_participant_session() -> Optional[str]:
         session.clear()
         raise SessionValidationError("Session not found. Please join a session again.")
     
-    # Verify session is still active
-    if session_file_data.get('status') != 'active':
-        raise SessionValidationError("This session is not active.")
+
     
     return None
 
