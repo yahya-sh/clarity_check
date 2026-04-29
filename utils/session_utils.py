@@ -132,7 +132,6 @@ def validate_participant_session() -> Optional[str]:
     
     # Verify session is still active
     if session_file_data.get('status') != 'active':
-        session.clear()
         raise SessionValidationError("This session is not active.")
     
     return None

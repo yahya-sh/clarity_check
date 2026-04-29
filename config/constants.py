@@ -39,7 +39,10 @@ SESSIONS_DIR = "sessions"
 STATUS_DRAFT = "draft"
 STATUS_PUBLISHED = "published"
 STATUS_ARCHIVED = "archived"
-STATUS_ACTIVE = "active"
+
+# Session statuses
+SESSION_ACTIVE = "active"
+SESSION_PENDING = "pending"
 
 VALID_STATUSES = {STATUS_DRAFT, STATUS_PUBLISHED, STATUS_ARCHIVED}
 

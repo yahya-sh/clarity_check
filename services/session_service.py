@@ -19,7 +19,7 @@ from repositories.sessions import (
 from repositories import runs_repo, presentations_repo
 from repositories.base import NotFoundError, ValidationError
 from models.participant import Participant
-from config.constants import STATUS_ACTIVE
+from config.constants import SESSION_ACTIVE
 import random
 from datetime import datetime, timedelta
 
@@ -104,6 +104,29 @@ class SessionService:
         return session_data
     
     @staticmethod
+    def get_session_status(
+        username: str,
+        presentation_uuid: str,
+        session_uuid: str
+    ) -> Optional[str]:
+        """
+        Get the status of a session.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            
+        Returns:
+            Session status string or None if session not found
+        """
+        try:
+            session_data = SessionService.get_session(username, presentation_uuid, session_uuid)
+            return session_data.get('status')
+        except NotFoundError:
+            return None
+    
+    @staticmethod
     def is_session_active(
         username: str,
         presentation_uuid: str,
@@ -120,11 +143,8 @@ class SessionService:
         Returns:
             True if session is active, False otherwise
         """
-        try:
-            session_data = SessionService.get_session(username, presentation_uuid, session_uuid)
-            return session_data.get('status') == STATUS_ACTIVE
-        except NotFoundError:
-            return False
+        status = SessionService.get_session_status(username, presentation_uuid, session_uuid)
+        return status == SESSION_ACTIVE
     
     @staticmethod
     def add_participant_to_session(
