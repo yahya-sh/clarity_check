@@ -12,7 +12,7 @@ from services.pin_service_extended import PinServiceExtended
 from services.participant_service import ParticipantService
 from services.live_session_service import LiveSessionService
 from utils.form_utils import FormUtils
-from config.constants import FLASH_ERROR
+from config.constants import FLASH_ERROR, SESSION_DONE
 
 routes = Blueprint('participant', __name__)
 
@@ -69,8 +69,11 @@ def participant_session(session_uuid):
         g.participant.presentation_uuid,
         g.participant.session_uuid
     )
+    # Redirect to the session result page if session is done
+    if session_data.get('status') == SESSION_DONE:
+        return redirect(url_for('participant.session_result', session_uuid=session_uuid))
     
-    if not success:
+    if not success or session_uuid != g.participant.session_uuid:
         flash(error_message or "Session not found", FLASH_ERROR)
         return redirect(url_for('participant.join_session'))
     
@@ -141,3 +144,52 @@ def participant_session(session_uuid):
                          current_question_index=current_question_index_display,
                          total_questions=total_questions,
                          has_answered=has_answered)
+
+@routes.route('/session/<session_uuid>/result')
+@require_participant
+def session_result(session_uuid):
+    """Render the session result page with leaderboard for participants."""
+    # Validate that the session_uuid matches the participant's session
+    if session_uuid != g.participant.session_uuid:
+        flash("Session not found", FLASH_ERROR)
+        return redirect(url_for('participant.join_session'))
+    
+    # Get session data
+    success, error_message, session_data = ParticipantService.get_session_for_participant(
+        g.participant.presentation_instructor_username,
+        g.participant.presentation_uuid,
+        g.participant.session_uuid
+    )
+    
+    if not success:
+        flash(error_message or "Session not found", FLASH_ERROR)
+        return redirect(url_for('participant.join_session'))
+    
+    # Verify session is completed
+    if session_data.get('status') != SESSION_DONE:
+        flash("Session results are not available yet", FLASH_ERROR)
+        return redirect(url_for('participant.participant_session', session_uuid=session_uuid))
+    
+    # Get users_points from session data
+    users_points = session_data.get('users_points', {})
+    participants = session_data.get('participants', [])
+    
+    # Create leaderboard by merging participant info with points
+    leaderboard = []
+    for participant in participants:
+        participant_uuid = participant.get('uuid')
+        nickname = participant.get('nickname', 'Anonymous')
+        points = users_points.get(participant_uuid, 0)
+        
+        leaderboard.append({
+            'uuid': participant_uuid,
+            'nickname': nickname,
+            'points': points
+        })
+    
+    # Sort by points (highest first)
+    leaderboard.sort(key=lambda x: x['points'], reverse=True)
+    
+    return render_template('session_participant_result.html',
+                         session_data=session_data,
+                         leaderboard=leaderboard)
