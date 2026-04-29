@@ -1,3 +1,9 @@
 from .auth import routes as auth_routes
-from .instructor import routes as instructor_routes
-from .main import routes as main_routes
+from .public import routes as public_routes
+from .dashboard import routes as dashboard_routes
+from .presentations import routes as presentations_routes
+from .objectives import routes as objectives_routes
+from .questions import routes as questions_routes
+from .sessions import routes as sessions_routes
+from .participant import routes as participant_routes
+from .api import routes as api_routes

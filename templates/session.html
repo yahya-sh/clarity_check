@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% if session_data %}
+{% if session_data and session_data.status == 'active' %}
 <!-- Session is active - show normal content -->
 <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-6">Session Active</h1>
@@ -17,8 +17,13 @@
         <div class="mb-8">
             <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
+        {% if session_data and session_data.status == 'waiting' %}
+        <h1 class="text-3xl font-bold mb-4">Session Lobby</h1>
+        <p class="text-gray-600 mb-6">You've joined the session! Waiting for the instructor to start the presentation...</p>
+        {% else %}
         <h1 class="text-3xl font-bold mb-4">Waiting for Session to Start</h1>
         <p class="text-gray-600 mb-6">The instructor hasn't started the session yet. Please wait...</p>
+        {% endif %}
         <div class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
             <p class="text-sm">We're checking every 5 seconds for the session to begin.</p>
         </div>
@@ -28,7 +33,7 @@
 {% endblock %}
 
 {% block scripts %}
-{% if not session_data %}
+{% if not session_data or session_data.status != 'active' %}
 <script>
 // CSRF token handling for Flask-WTF
 function getCSRFToken() {
@@ -59,7 +64,7 @@ let pollInterval = setInterval(checkSessionStatus, 5000);
 
 async function checkSessionStatus() {
     try {
-        const response = await fetch('/api/check-session-status', {
+        const response = await fetch(`{{ url_for('api.check_session_status') }}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -71,8 +76,7 @@ async function checkSessionStatus() {
         const data = await response.json();
         
         if (data.success && data.status === 'active') {
-            // Session is now active, clear the interval and reload the page
-            clearInterval(pollInterval);
+            // Session is now active, reload the page
             window.location.reload();
         }
     } catch (error) {
@@ -80,8 +84,7 @@ async function checkSessionStatus() {
     }
 }
 
-// Start checking immediately
-checkSessionStatus();
+
 </script>
 {% endif %}
 {% endblock %}

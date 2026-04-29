@@ -1,8 +1,6 @@
-from dataclasses import dataclass
 from datetime import datetime
 import uuid
 
-@dataclass
 class Presentation:
     id: str
     title: str
@@ -68,13 +66,16 @@ class Presentation:
         
         return presentation
     
-    def calculate_estimated_duration(self):
+    def calculate_estimated_duration(self) -> float:
         """
-        Calculate estimated duration by summing all question time limits,
-        multiplying by 1.4, and adding 3 minutes.
-        
+        Calculate the estimated duration of the presentation in minutes.
+
+        The calculation sums the ``time_limit`` of all questions across all
+        objectives, adds a 40% buffer (multiplier of 1.4) for transitions,
+        and adds a fixed 3-minute overhead.
+
         Returns:
-            float: Estimated duration in minutes
+            The estimated duration in minutes as a float.
         """
         total_time_seconds = 0
         
@@ -94,15 +95,18 @@ class Presentation:
         estimated_duration = (total_time_seconds * 1.4 + 180) / 60
         return estimated_duration
     
-    def can_be_published(self):
+    def can_be_published(self) -> tuple[bool, str]:
         """
-        Check if the presentation meets the requirements to be published:
-        1. At least two questions total
-        2. At least one objective
-        3. No objective without questions beneath it
-        
+        Check whether the presentation meets the requirements to be published.
+
+        Requirements:
+        1. At least one objective exists.
+        2. Every objective has at least one question.
+        3. The presentation has at least two questions in total.
+
         Returns:
-            tuple: (bool: can_publish, str: error_message)
+            A tuple ``(can_publish, error_message)``. If ``can_publish`` is
+            ``True``, ``error_message`` is an empty string.
         """
         objectives = self.objectives if isinstance(self.objectives, list) else []
         
@@ -131,12 +135,15 @@ class Presentation:
         
         return True, ""
     
-    def validate_and_fix_status(self):
+    def validate_and_fix_status(self) -> tuple[bool, str]:
         """
-        Validate the presentation and automatically convert to draft if it doesn't meet publishing requirements.
-        
+        Validate the presentation and automatically revert to ``'draft'``
+        status if it no longer meets publishing requirements.
+
         Returns:
-            tuple: (bool: status_changed, str: message)
+            A tuple ``(status_changed, message)``. If the status was changed,
+            ``status_changed`` is ``True`` and ``message`` contains the reason.
+            Otherwise, ``status_changed`` is ``False`` and ``message`` is empty.
         """
         if self.status == 'published':
             can_publish, error_message = self.can_be_published()

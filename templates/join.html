@@ -57,7 +57,7 @@
         </div>
 
         <div class="mt-6 text-center">
-            <a href="{{ url_for('main.index') }}" class="text-sm text-muted hover:text-text transition-colors">
+            <a href="{{ url_for('public.index') }}" class="text-sm text-muted hover:text-text transition-colors">
                 ← Back to Home
             </a>
         </div>
@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // PIN validation function
     async function validatePin(pin) {
         try {
-            const response = await fetch('/api/validate-pin', {
+            const response = await fetch(`{{ url_for('api.validate_pin') }}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,105 +1,178 @@
 
-import json
-import os
 from datetime import datetime
+from typing import Dict, List, Optional
+
 from models.presentation import Presentation
+from repositories.base import UserSpecificRepository, NotFoundError, CorruptedDataError
 from repositories import runs
+from utils.path_utils import (
+    get_user_presentations_dir,
+    get_presentation_file_path,
+    extract_username_from_path
+)
+from utils.file_utils import (
+    read_json_file,
+    write_json_file,
+    delete_file,
+    safe_read_json_files,
+    FileOperationError,
+    FileCorruptedError
+)
+from config.constants import JSON_EXTENSION
 
-def get_presentations_dir(username):
-    """Get the presentations directory for a user"""
-    return f"data/instructors/{username}/presentations"
 
-def ensure_presentations_dir(username):
-    """Ensure the presentations directory exists for a user"""
-    presentations_dir = get_presentations_dir(username)
-    os.makedirs(presentations_dir, exist_ok=True)
-    return presentations_dir
-
-def load_presentation(username, presentation_id):
-    """Load a specific presentation by ID"""
-    path = f"{get_presentations_dir(username)}/{presentation_id}.json"
-    with open(path) as f:
-        data = json.load(f)
-        return Presentation.from_dict(data)
-
-def get_user_presentations(username):
-    """Get all presentations for a user"""
-    presentations_dir = get_presentations_dir(username)
-    if not os.path.exists(presentations_dir):
-        return []
-    
-    presentations = []
-    for filename in os.listdir(presentations_dir):
-        if filename.endswith('.json'):
-            try:
-                with open(os.path.join(presentations_dir, filename)) as f:
-                    data = json.load(f)
-                    presentations.append(Presentation.from_dict(data))
-            except (json.JSONDecodeError, KeyError, ValueError):
-                continue
-    
-    # Sort by creation date (newest first)
-    presentations.sort(key=lambda p: p.created_at, reverse=True)
-    return presentations
-
-def save_presentation(presentation):
-    """Save a presentation to file"""
-    ensure_presentations_dir(presentation.username)
-    path = f"{get_presentations_dir(presentation.username)}/{presentation.id}.json"
-    
-    presentation.updated_at = datetime.now()
-    with open(path, 'w') as f:
-        json.dump(presentation.to_dict(), f, indent=2)
-    
-    return presentation
-
-def delete_presentation(username, presentation_id):
-    """Delete a presentation by ID"""
-    path = f"{get_presentations_dir(username)}/{presentation_id}.json"
-    if os.path.exists(path):
-        os.remove(path)
-        return True
-    return False
-
-def get_presentation_by_pin(pin_code):
-    """Find a presentation by its PIN code across all users
-    
-    Args:
-        pin_code: The PIN code to search for
-        
-    Returns:
-        Presentation object if found and valid, None otherwise
+class PresentationsRepository(UserSpecificRepository):
     """
-    if not pin_code or not pin_code.strip():
+    Repository for presentation data operations.
+    
+    Handles CRUD operations for presentations with standardized
+    error handling and file operations.
+    """
+    
+    def get_by_id(self, presentation_id: str) -> Optional[Presentation]:
+        """
+        Get a presentation by its ID.
+        
+        Args:
+            presentation_id: UUID of the presentation
+            
+        Returns:
+            Presentation instance or None if not found
+        """
+        try:
+            file_path = get_presentation_file_path(self.username, presentation_id)
+            data = self._read_json_file(file_path)
+            return Presentation.from_dict(data)
+        except (NotFoundError, CorruptedDataError):
+            return None
+    
+    def save(self, presentation: Presentation) -> Presentation:
+        """
+        Save a presentation to file.
+        
+        Args:
+            presentation: Presentation instance to save
+            
+        Returns:
+            Saved presentation instance
+        """
+        presentation.updated_at = datetime.now()
+        file_path = get_presentation_file_path(presentation.username, presentation.id)
+        self._write_json_file(file_path, presentation.to_dict())
+        return presentation
+    
+    def delete(self, presentation_id: str) -> bool:
+        """
+        Delete a presentation by ID.
+        
+        Args:
+            presentation_id: UUID of the presentation
+            
+        Returns:
+            True if deleted, False if not found
+        """
+        file_path = get_presentation_file_path(self.username, presentation_id)
+        return self._delete_file(file_path)
+    
+    def list_all(self) -> List[Presentation]:
+        """
+        Get all presentations for the user.
+        
+        Returns:
+            List of presentation instances
+        """
+        presentations_dir = get_user_presentations_dir(self.username)
+        json_data_list = self._safe_read_json_files(presentations_dir)
+        
+        presentations = []
+        for data in json_data_list:
+            try:
+                presentations.append(Presentation.from_dict(data))
+            except (KeyError, ValueError):
+                # Skip corrupted presentation data
+                continue
+        
+        # Sort by creation date (newest first)
+        presentations.sort(key=lambda p: p.created_at, reverse=True)
+        return presentations
+    
+    @staticmethod
+    def get_presentation_by_pin(pin_code: str) -> Optional[Presentation]:
+        """
+        Find a presentation by its PIN code across all users.
+        
+        Args:
+            pin_code: The PIN code to search for
+            
+        Returns:
+            Presentation instance if found and valid, None otherwise
+        """
+        if not pin_code or not pin_code.strip():
+            return None
+        
+        pin_code = pin_code.strip()
+        all_run_paths = runs.get_all_run_paths_across_users()
+        
+        for run_path in all_run_paths:
+            try:
+                run_data = read_json_file(run_path)
+                
+                if run_data.get('pin_code') == pin_code:
+                    # Check if PIN is not expired
+                    expires_at = run_data.get('expires_at')
+                    if expires_at:
+                        try:
+                            expires_at_datetime = datetime.fromisoformat(expires_at)
+                            if expires_at_datetime > datetime.now():
+                                # PIN is valid, load the presentation
+                                presentation_uuid = run_data.get('presentation_uuid')
+                                if presentation_uuid:
+                                    username = extract_username_from_path(run_path)
+                                    if username:
+                                        return PresentationsRepository(username)._load_presentation_for_user(username, presentation_uuid)
+                        except (ValueError, TypeError):
+                            continue
+            except (FileNotFoundError, FileOperationError):
+                continue
+        
         return None
     
-    pin_code = pin_code.strip()
-    all_run_paths = runs.get_all_run_paths_across_users()
-    
-    for run_path in all_run_paths:
-        try:
-            with open(run_path, 'r') as f:
-                run_data = json.load(f)
+    def _load_presentation_for_user(self, username: str, presentation_uuid: str) -> Optional[Presentation]:
+        """
+        Load a presentation for a specific user.
+        
+        Args:
+            username: Username of the presentation owner
+            presentation_uuid: UUID of the presentation
             
-            if run_data.get('pin_code') == pin_code:
-                # Check if PIN is not expired
-                expires_at = run_data.get('expires_at')
-                if expires_at:
-                    try:
-                        expires_at_datetime = datetime.fromisoformat(expires_at)
-                        if expires_at_datetime > datetime.now():
-                            # PIN is valid, load the presentation
-                            presentation_uuid = run_data.get('presentation_uuid')
-                            if presentation_uuid:
-                                # Extract username from the file path
-                                # Path format: data/instructors/{username}/runs/{presentation_uuid}_{pin}.json
-                                path_parts = run_path.split(os.sep)
-                                if len(path_parts) >= 4 and path_parts[1] == 'instructors':
-                                    username = path_parts[2]
-                                    return load_presentation(username, presentation_uuid)
-                    except (ValueError, TypeError):
-                        continue
-        except (json.JSONDecodeError, FileNotFoundError):
-            continue
-    
-    return None
+        Returns:
+            Presentation instance or None if not found
+        """
+        try:
+            file_path = get_presentation_file_path(username, presentation_uuid)
+            data = read_json_file(file_path)
+            return Presentation.from_dict(data)
+        except (FileNotFoundError, FileCorruptedError, FileOperationError):
+            return None
+
+
+
+def load_presentation(username: str, presentation_id: str) -> Optional[Presentation]:
+    """Load a specific presentation by ID"""
+    return PresentationsRepository(username).get_by_id(presentation_id)
+
+def get_user_presentations(username: str) -> List[Presentation]:
+    """Get all presentations for a user"""
+    return PresentationsRepository(username).list_all()
+
+def save_presentation(presentation: Presentation) -> Presentation:
+    """Save a presentation to file"""
+    return PresentationsRepository(presentation.username).save(presentation)
+
+def delete_presentation(username: str, presentation_id: str) -> bool:
+    """Delete a presentation by ID"""
+    return PresentationsRepository(username).delete(presentation_id)
+
+def get_presentation_by_pin(pin_code: str) -> Optional[Presentation]:
+    """Find a presentation by its PIN code across all users"""
+    return PresentationsRepository.get_presentation_by_pin(pin_code)

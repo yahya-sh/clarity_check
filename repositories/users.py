@@ -1,7 +1,7 @@
-import json
 import os
 from pathlib import Path
 from models.user import User
+from utils.file_utils import read_json_file, write_json_file, FileOperationError
 
 users_dir = Path('data/users')
 
@@ -13,15 +13,12 @@ def username_exist(username: str) -> bool:
 def get_user(username: str) -> User|None:
     """Get user using username."""
     user_file = users_dir / f"{username}.json"
-    if user_file.exists():
-        try:
-            with open(user_file, 'r') as f:
-                user_data = json.load(f)
-                user_data['username'] = username
-                return User.from_dict(user_data)
-        except (FileNotFoundError, json.JSONDecodeError):
-            return None
-    return None
+    try:
+        user_data = read_json_file(str(user_file))
+        user_data['username'] = username
+        return User.from_dict(user_data)
+    except FileOperationError:
+        return None
 
 def save_user(user: User) -> bool:
     """Save user data to individual user file. Accepts User model or dict."""
@@ -34,11 +31,9 @@ def save_user(user: User) -> bool:
     try:
         user_record = user.to_dict()
         del user_record['username']
-            
-        with open(user_file, 'w') as f:
-            json.dump(user_record, f, indent=2)
+        write_json_file(str(user_file), user_record)
         return True
-    except Exception:
+    except FileOperationError:
         return False
 
 

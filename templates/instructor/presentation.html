@@ -3,21 +3,21 @@
 {% block content %}
 <div class="max-w-5xl mx-auto">
     <div class="mb-4 mt-4 flex items-center justify-between">
-        <a href="{{ url_for('instructor.dashboard') }}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-secondary text-text border border-border shadow-sm hover:bg-secondary/70 h-9 px-4">
+        <a href="{{ url_for('dashboard.dashboard') }}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-secondary text-text border border-border shadow-sm hover:bg-secondary/70 h-9 px-4">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
             Back to Dashboard
         </a>
         
         <div class="flex items-center gap-2">
             {% if presentation.status == 'published' %}
-            <a href="{{ url_for('instructor.run_presentation', presentation_id=presentation.id) }}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4">
+            <a href="{{ url_for('sessions.run_presentation', presentation_id=presentation.id) }}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 Run
             </a>
             {% endif %}
             
             <button type="button" id="deletePresentationBtn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-red-600 text-white shadow hover:bg-red-700 h-9 px-4 cursor-pointer"
-                data-delete-url="{{ url_for('instructor.delete_presentation_route', presentation_id=presentation.id) }}"
+                data-delete-url="{{ url_for('presentations.delete_presentation_route', presentation_id=presentation.id) }}"
                 data-csrf-token="{{ csrf_token() }}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
                 Delete
@@ -127,7 +127,7 @@
                         No objectives yet.
                     </div>
 
-                    <form id="createObjectiveForm" method="POST" class="hidden" action="{{ url_for('instructor.create_objective_route', presentation_id=presentation.id) }}">
+                    <form id="createObjectiveForm" method="POST" class="hidden" action="{{ url_for('objectives.create_objective_route', presentation_id=presentation.id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="objective_text" id="createObjectiveTextInput">
                     </form>
@@ -849,7 +849,7 @@
         setActiveObjective(objectiveId);
         setQuestionsLoading();
 
-        const endpoint = '/presentations/' + presentationId + '/objectives/' + objectiveId + '/questions';
+        const endpoint = `{{ url_for('questions.get_objective_questions_route', presentation_id=presentation.id, objective_id='OBJECTIVE_ID') }}`.replace('OBJECTIVE_ID', objectiveId);
         return fetch(endpoint, {
             method: 'POST',
             headers: {
@@ -1028,13 +1028,13 @@
                 return;
             }
             updateObjectiveTextInput.value = value;
-            updateObjectiveForm.action = '/presentations/{{ presentation.id }}/objectives/' + objectiveId + '/update';
+            updateObjectiveForm.action = `{{ url_for('objectives.update_objective_route', presentation_id=presentation.id, objective_id='OBJECTIVE_ID') }}`.replace('OBJECTIVE_ID', objectiveId);
             updateObjectiveForm.submit();
             return;
         }
 
         if (event.target.closest('.objective-delete-btn')) {
-            showDeleteObjectiveModal('/presentations/{{ presentation.id }}/objectives/' + objectiveId + '/delete');
+            showDeleteObjectiveModal(`{{ url_for('objectives.delete_objective_route', presentation_id=presentation.id, objective_id='OBJECTIVE_ID') }}`.replace('OBJECTIVE_ID', objectiveId));
             return;
         }
 
@@ -1135,7 +1135,11 @@
         }
 
         if (event.target.closest('.question-delete-btn')) {
-            showDeleteQuestionModal('/presentations/{{ presentation.id }}/objectives/' + activeObjectiveId + '/questions/' + questionId + '/delete');
+            if (!activeObjectiveId) {
+                console.error('No active objective selected for question deletion');
+                return;
+            }
+            showDeleteQuestionModal(`{{ url_for('questions.delete_question_route', presentation_id=presentation.id, objective_id='OBJECTIVE_ID', question_id='QUESTION_ID') }}`.replace('OBJECTIVE_ID', encodeURIComponent(activeObjectiveId)).replace('QUESTION_ID', encodeURIComponent(questionId)));
             return;
         }
 
@@ -1173,14 +1177,9 @@
             setQuestionFormError('Question ID is required.');
             return;
         }
-        const validationError = validateQuestionPayloadInOrder(payload);
-        if (validationError) {
-            setQuestionFormError(validationError);
-            return;
-        }
 
         saveQuestionBtn.disabled = true;
-        const endpoint = '/presentations/' + presentationId + '/objectives/' + payload.objective_id + '/questions/save';
+        const endpoint = `{{ url_for('questions.save_question_route', presentation_id=presentation.id, objective_id='OBJECTIVE_ID') }}`.replace('OBJECTIVE_ID', encodeURIComponent(payload.objective_id));
         fetch(endpoint, {
             method: 'POST',
             headers: {

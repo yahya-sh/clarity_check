@@ -1,7 +1,27 @@
+"""
+models/participant.py — Participant domain model.
+
+A participant is a session attendee (non-instructor) who joins via a PIN code.
+This model is used both during the run (lobby) phase and during the live
+session.  It is stored in abbreviated form inside the run JSON file and
+reconstituted from the Flask session on each request by
+:func:`~app.add_auth_participant_to_context`.
+"""
 import uuid
 from datetime import datetime, UTC
 
 class Participant:
+    """
+    Represents a participant in a presentation session.
+
+    Attributes:
+        uuid (str): Unique identifier for this participant.
+        session_uuid (str): UUID of the session the participant belongs to.
+        nickname (str): Display name chosen by the participant.
+        presentation_uuid (str): UUID of the presentation being attended.
+        presentation_instructor_username (str): Username of the instructor
+            who owns the presentation.
+    """
     uuid: str
     session_uuid: str
     nickname: str

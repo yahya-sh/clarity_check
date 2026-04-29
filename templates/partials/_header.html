@@ -2,7 +2,7 @@
 <header class="sticky top-0 z-50 w-full border-b border-border bg-bg/95 backdrop-blur supports-[backdrop-filter]:bg-bg/60">
   <div class="container mx-auto max-w-7xl flex h-16 items-center justify-between px-6">
     <div class="flex items-center gap-2">
-      <a href="{{ url_for('main.index') }}" class="flex items-center space-x-2">
+      <a href="{{ url_for('public.index') }}" class="flex items-center space-x-2">
         <img src="{{ url_for('static', filename='favicon.svg') }}" alt="ClarityCheck Icon" class="w-8 h-8">
         <span class="font-bold text-xl tracking-tight">
           <span class="text-[#6366f1]">Clarity</span><span class="text-[#ffffff]">Check</span>
@@ -16,7 +16,7 @@
         <a href="{{ url_for('auth.logout') }}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-surface hover:text-text h-9 px-4 py-2">
           Log out
         </a>
-        <a href="{{ url_for('instructor.dashboard') }}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2">
+        <a href="{{ url_for('dashboard.dashboard') }}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2">
           Dashboard
         </a>
         {% else %}

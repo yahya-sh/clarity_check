@@ -2,118 +2,165 @@
 
 {% block content %}
 <style>
-@keyframes pulse-scale {
-    0%, 100% {
-        transform: scale(1);
+    @keyframes pulse-scale {
+
+        0%,
+        100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
     }
-    50% {
-        transform: scale(1.05);
+
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
-}
 
-@keyframes fade-in {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
+    .animate-pulse-scale {
+        animation: pulse-scale 2s ease-in-out infinite;
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+
+    .animate-pulse-scale:hover {
+        animation-play-state: paused;
     }
-}
 
-.animate-pulse-scale {
-    animation: pulse-scale 2s ease-in-out infinite;
-}
+    .cursor-pointer {
+        cursor: pointer;
+    }
 
-.animate-pulse-scale:hover {
-    animation-play-state: paused;
-}
+    .animate-fade-in {
+        animation: fade-in 1s ease-out;
+    }
 
-.cursor-pointer {
-    cursor: pointer;
-}
+    .description-truncated {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
 
-.animate-fade-in {
-    animation: fade-in 1s ease-out;
-}
+    .description-expanded {
+        display: block;
+    }
 
-.description-truncated {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.description-expanded {
-    display: block;
-}
-
-.toggle-icon-rotated {
-    transform: rotate(180deg);
-}
+    .toggle-icon-rotated {
+        transform: rotate(180deg);
+    }
 </style>
 
 <input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
 
 <div class="max-w-6xl mx-auto pt-4 px-4 sm:px-6 lg:px-8">
     <div class="mb-4 mt-4">
-        <a href="{{ url_for('instructor.dashboard') }}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-secondary text-text border border-border shadow-sm hover:bg-secondary/70 h-9 px-4">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <a href="{{ url_for('dashboard.dashboard') }}"
+            class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-secondary text-text border border-border shadow-sm hover:bg-secondary/70 h-9 px-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
             Back to Dashboard
         </a>
     </div>
 
     <div class="space-y-6">
         <!-- Enhanced Header Section -->
-        <div class="bg-gradient-to-r from-surface/80 to-surface/60 border border-border rounded-2xl p-4 sm:p-6 lg:p-8 shadow-lg backdrop-blur-sm">
-            <div class="flex flex-col lg:flex-row items-center lg:items-start justify-center lg:justify-between gap-4 lg:gap-8">
+        <div
+            class="bg-gradient-to-r from-surface/80 to-surface/60 border border-border rounded-2xl p-4 sm:p-6 lg:p-8 shadow-lg backdrop-blur-sm">
+            <div
+                class="flex flex-col lg:flex-row items-center lg:items-start justify-center lg:justify-between gap-4 lg:gap-8">
                 <div class="flex-1 text-center lg:text-left">
                     <div class="flex items-center gap-3 mb-3">
                         <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                         <span class="text-sm font-medium text-green-600">Session Ready</span>
+                        <span id="headerParticipantCount" class="text-sm font-medium text-muted">(<span id="headerCountNumber">0</span> participants)</span>
                     </div>
                     <h1 class="text-4xl font-bold text-text mb-3 tracking-tight">{{ presentation.title }}</h1>
                     {% if presentation.description %}
-                        <div class="description-container">
-                            <p id="descriptionText" class="text-lg text-muted leading-relaxed">{{ presentation.description }}</p>
-                            {% if presentation.description|length > 150 %}
-                                <button id="descriptionToggle" class="text-sm text-accent hover:text-accent/80 font-medium mt-2 cursor-pointer transition-colors">
-                                    <span id="toggleText">Show more</span>
-                                    <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block ml-1 transition-transform"><path d="M6 9l6 6 6-6"/></svg>
-                                </button>
-                            {% endif %}
-                        </div>
+                    <div class="description-container">
+                        <p id="descriptionText" class="text-lg text-muted leading-relaxed">{{ presentation.description
+                            }}</p>
+                        {% if presentation.description|length > 150 %}
+                        <button id="descriptionToggle"
+                            class="text-sm text-accent hover:text-accent/80 font-medium mt-2 cursor-pointer transition-colors">
+                            <span id="toggleText">Show more</span>
+                            <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round"
+                                class="inline-block ml-1 transition-transform">
+                                <path d="M6 9l6 6 6-6" />
+                            </svg>
+                        </button>
+                        {% endif %}
+                    </div>
                     {% endif %}
                     <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mt-6">
                         <div class="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><path d="M9 11H3v10h6V11Zm6-7h6v17h-6V4Zm-6 0v4h6V4H9Z"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="text-accent">
+                                <path d="M9 11H3v10h6V11Zm6-7h6v17h-6V4Zm-6 0v4h6V4H9Z" />
+                            </svg>
                             <span class="text-sm text-muted">{{ objectives_count }} objectives</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="text-accent">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                                <line x1="12" y1="17" x2="12.01" y2="17" />
+                            </svg>
                             <span class="text-sm text-muted">{{ questions_count }} questions</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="text-accent">
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="12 6 12 12 16 14" />
+                            </svg>
                             <span class="text-sm text-muted">~{{ "%.0f"|format(estimated_duration) }}min</span>
                         </div>
                     </div>
                 </div>
                 <div class="text-center bg-background/50 rounded-xl p-6 border border-border/50 backdrop-blur-sm">
-                    <div class="text-4xl font-bold text-accent mb-3 font-mono tracking-wider" id="pinCode">{{ pin }}</div>
+                    <div class="text-4xl font-bold text-accent mb-3 font-mono tracking-wider" id="pinCode">{{ pin_code }}
+                    </div>
                     <div class="text-sm text-muted mb-4 font-medium">Session PIN</div>
                     <div class="space-y-3">
                         <div id="countdown" class="text-sm font-medium text-orange-600">
                             <span id="countdownText">Loading...</span>
                         </div>
-                        <button id="refreshPinBtn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-surface text-text border border-border shadow-sm hover:bg-surface/70 h-9 px-4 w-full cursor-pointer">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                        <button id="refreshPinBtn"
+                            class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-surface text-text border border-border shadow-sm hover:bg-surface/70 h-9 px-4 w-full cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="mr-2">
+                                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                                <path d="M21 3v5h-5" />
+                                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                                <path d="M8 16H3v5" />
+                            </svg>
                             Refresh PIN
                         </button>
-                        <button id="startSessionBtn" class="inline-flex items-center justify-center rounded-lg text-base font-medium transition-all hover:scale-105 bg-primary text-primary-foreground shadow-lg hover:shadow-primary/25 px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed w-full animate-pulse-scale cursor-pointer">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        <button id="startSessionBtn"
+                            class="inline-flex items-center justify-center rounded-lg text-base font-medium transition-all hover:scale-105 bg-primary text-primary-foreground shadow-lg hover:shadow-primary/25 px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed w-full animate-pulse-scale cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="mr-2">
+                                <polygon points="5 3 19 12 5 21 5 3" />
+                            </svg>
                             Start Session
                         </button>
                         <div class="text-xs text-muted text-center mt-2 animate-fade-in">
@@ -144,25 +191,27 @@
             <!-- Session Info Section -->
             <div class="bg-surface/50 border border-border rounded-xl p-4 sm:p-6">
                 <h2 class="text-xl font-semibold text-text mb-4">Session Details</h2>
-                
+
                 <!-- Objectives List -->
                 {% if presentation.objectives %}
-                    <div>
-                        <h3 class="text-sm font-medium text-text mb-4">Objectives in this quiz</h3>
-                        <div class="space-y-3">
-                            {% for objective in presentation.objectives %}
-                                <div class="border border-accent rounded-lg p-4">
-                                    <div class="flex items-center gap-3 mb-2">
-                                        <span class="flex-shrink-0 w-6 h-6 bg-accent/20 text-accent rounded-full flex items-center justify-center text-xs font-medium">{{ loop.index }}</span>
-                                        <span class="text-sm text-text">{{ objective.text }}</span>
-                                    </div>
-                                    <div class="text-xs text-muted ml-9">
-                                        {{ objective.questions|length if objective.questions else 0 }} questions
-                                    </div>
-                                </div>
-                            {% endfor %}
+                <div>
+                    <h3 class="text-sm font-medium text-text mb-4">Objectives in this quiz</h3>
+                    <div class="space-y-3">
+                        {% for objective in presentation.objectives %}
+                        <div class="border border-accent rounded-lg p-4">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span
+                                    class="flex-shrink-0 w-6 h-6 bg-accent/20 text-accent rounded-full flex items-center justify-center text-xs font-medium">{{
+                                    loop.index }}</span>
+                                <span class="text-sm text-text">{{ objective.text }}</span>
+                            </div>
+                            <div class="text-xs text-muted ml-9">
+                                {{ objective.questions|length if objective.questions else 0 }} questions
+                            </div>
                         </div>
+                        {% endfor %}
                     </div>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -173,342 +222,433 @@
             <div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
                 <div class="space-y-4">
                     <div class="flex gap-3">
-                        <div class="flex-shrink-0 w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" data-component-id="src/app/live-session-screen/components/SessionSetup.tsx:71:16" data-component-path="src/app/live-session-screen/components/SessionSetup.tsx" data-component-line="71" data-component-end-line="71" data-component-file="SessionSetup.tsx" data-component-name="Icon" data-component-content="%7B%22elementName%22%3A%22Icon%22%2C%22className%22%3A%22text-primary%22%7D" width="15" height="15" class=" text-primary"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z"></path></svg>
+                        <div
+                            class="flex-shrink-0 w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" aria-hidden="true" data-slot="icon"
+                                data-component-id="src/app/live-session-screen/components/SessionSetup.tsx:71:16"
+                                data-component-path="src/app/live-session-screen/components/SessionSetup.tsx"
+                                data-component-line="71" data-component-end-line="71"
+                                data-component-file="SessionSetup.tsx" data-component-name="Icon"
+                                data-component-content="%7B%22elementName%22%3A%22Icon%22%2C%22className%22%3A%22text-primary%22%7D"
+                                width="15" height="15" class=" text-primary">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z">
+                                </path>
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z">
+                                </path>
+                            </svg>
                         </div>
                         <div>
                             <h3 class="font-medium text-text mb-1">Share the join link or QR code</h3>
-                            <p class="text-sm text-muted">Audience scans or clicks to join on their device — no app required</p>
+                            <p class="text-sm text-muted">Audience scans or clicks to join on their device — no app
+                                required</p>
                         </div>
                     </div>
                     <div class="flex gap-3">
-                        <div class="flex-shrink-0 w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" data-component-id="src/app/live-session-screen/components/SessionSetup.tsx:71:16" data-component-path="src/app/live-session-screen/components/SessionSetup.tsx" data-component-line="71" data-component-end-line="71" data-component-file="SessionSetup.tsx" data-component-name="Icon" data-component-content="%7B%22elementName%22%3A%22Icon%22%2C%22className%22%3A%22text-primary%22%7D" width="15" height="15" class=" text-primary"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"></path></svg>
+                        <div
+                            class="flex-shrink-0 w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" aria-hidden="true" data-slot="icon"
+                                data-component-id="src/app/live-session-screen/components/SessionSetup.tsx:71:16"
+                                data-component-path="src/app/live-session-screen/components/SessionSetup.tsx"
+                                data-component-line="71" data-component-end-line="71"
+                                data-component-file="SessionSetup.tsx" data-component-name="Icon"
+                                data-component-content="%7B%22elementName%22%3A%22Icon%22%2C%22className%22%3A%22text-primary%22%7D"
+                                width="15" height="15" class=" text-primary">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z">
+                                </path>
+                            </svg>
                         </div>
                         <div>
                             <h3 class="font-medium text-text mb-1">Start each question when ready</h3>
-                            <p class="text-sm text-muted">You control the pacing — press Start to reveal each question</p>
+                            <p class="text-sm text-muted">You control the pacing — press Start to reveal each question
+                            </p>
                         </div>
                     </div>
                     <div class="flex gap-3">
-                        <div class="flex-shrink-0 w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" data-component-id="src/app/live-session-screen/components/SessionSetup.tsx:71:16" data-component-path="src/app/live-session-screen/components/SessionSetup.tsx" data-component-line="71" data-component-end-line="71" data-component-file="SessionSetup.tsx" data-component-name="Icon" data-component-content="%7B%22elementName%22%3A%22Icon%22%2C%22className%22%3A%22text-primary%22%7D" width="15" height="15" class=" text-primary"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"></path></svg>
+                        <div
+                            class="flex-shrink-0 w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" aria-hidden="true" data-slot="icon"
+                                data-component-id="src/app/live-session-screen/components/SessionSetup.tsx:71:16"
+                                data-component-path="src/app/live-session-screen/components/SessionSetup.tsx"
+                                data-component-line="71" data-component-end-line="71"
+                                data-component-file="SessionSetup.tsx" data-component-name="Icon"
+                                data-component-content="%7B%22elementName%22%3A%22Icon%22%2C%22className%22%3A%22text-primary%22%7D"
+                                width="15" height="15" class=" text-primary">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z">
+                                </path>
+                            </svg>
                         </div>
                         <div>
                             <h3 class="font-medium text-text mb-1">See live answer distribution</h3>
-                            <p class="text-sm text-muted">Watch responses come in and reveal the correct answer after time is up</p>
+                            <p class="text-sm text-muted">Watch responses come in and reveal the correct answer after
+                                time is up</p>
                         </div>
                     </div>
                 </div>
                 <div class="space-y-4">
                     <div class="flex gap-3">
-                        <div class="flex-shrink-0 w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" data-component-id="src/app/live-session-screen/components/SessionSetup.tsx:71:16" data-component-path="src/app/live-session-screen/components/SessionSetup.tsx" data-component-line="71" data-component-end-line="71" data-component-file="SessionSetup.tsx" data-component-name="Icon" data-component-content="%7B%22elementName%22%3A%22Icon%22%2C%22className%22%3A%22text-primary%22%7D" width="15" height="15" class=" text-primary"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"></path></svg>
+                        <div
+                            class="flex-shrink-0 w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" aria-hidden="true" data-slot="icon"
+                                data-component-id="src/app/live-session-screen/components/SessionSetup.tsx:71:16"
+                                data-component-path="src/app/live-session-screen/components/SessionSetup.tsx"
+                                data-component-line="71" data-component-end-line="71"
+                                data-component-file="SessionSetup.tsx" data-component-name="Icon"
+                                data-component-content="%7B%22elementName%22%3A%22Icon%22%2C%22className%22%3A%22text-primary%22%7D"
+                                width="15" height="15" class=" text-primary">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155">
+                                </path>
+                            </svg>
                         </div>
                         <div>
                             <h3 class="font-medium text-text mb-1">Discuss, then move on</h3>
-                            <p class="text-sm text-muted">Use the results to guide a discussion before advancing to the next question</p>
+                            <p class="text-sm text-muted">Use the results to guide a discussion before advancing to the
+                                next question</p>
                         </div>
                     </div>
                     <div class="flex gap-3">
-                        <div class="flex-shrink-0 w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" data-component-id="src/app/live-session-screen/components/SessionSetup.tsx:71:16" data-component-path="src/app/live-session-screen/components/SessionSetup.tsx" data-component-line="71" data-component-end-line="71" data-component-file="SessionSetup.tsx" data-component-name="Icon" data-component-content="%7B%22elementName%22%3A%22Icon%22%2C%22className%22%3A%22text-primary%22%7D" width="15" height="15" class=" text-primary"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 0 7.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 0 0 2.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 0 1 2.916.52 6.003 6.003 0 0 1-5.395 4.972m0 0a6.726 6.726 0 0 1-2.749 1.35m0 0a6.772 6.772 0 0 1-3.044 0"></path></svg>                        </div>
+                        <div
+                            class="flex-shrink-0 w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" aria-hidden="true" data-slot="icon"
+                                data-component-id="src/app/live-session-screen/components/SessionSetup.tsx:71:16"
+                                data-component-path="src/app/live-session-screen/components/SessionSetup.tsx"
+                                data-component-line="71" data-component-end-line="71"
+                                data-component-file="SessionSetup.tsx" data-component-name="Icon"
+                                data-component-content="%7B%22elementName%22%3A%22Icon%22%2C%22className%22%3A%22text-primary%22%7D"
+                                width="15" height="15" class=" text-primary">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 0 7.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 0 0 2.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 0 1 2.916.52 6.003 6.003 0 0 1-5.395 4.972m0 0a6.726 6.726 0 0 1-2.749 1.35m0 0a6.772 6.772 0 0 1-3.044 0">
+                                </path>
+                            </svg>
+                        </div>
                         <div>
                             <h3 class="font-medium text-text mb-1">Leaderboard + clarity report</h3>
-                            <p class="text-sm text-muted">End the session to see participant rankings and per-objective comprehension scores</p>
+                            <p class="text-sm text-muted">End the session to see participant rankings and per-objective
+                                comprehension scores</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        </div>
-
-        <!-- Participants Section -->
-        <div id="participantsSection" class="bg-surface/50 border border-border rounded-xl p-4 sm:p-6 mt-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold text-text">Participants</h2>
-                <div class="flex items-center gap-3">
-                    <div class="text-sm text-muted">
-                        {{ participants|length }} joined
-                    </div>
-                    <button id="refreshParticipantsBtn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-surface text-text border border-border shadow-sm hover:bg-surface/70 h-8 w-8 p-0 cursor-pointer" title="Refresh participants">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
-                    </button>
-                </div>
-            </div>
-            
-            {% if participants %}
-                <div class="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                    {% for participant in participants %}
-                        <div class="bg-background border border-border rounded-lg p-3 flex items-center gap-2">
-                            <div class="w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center text-sm font-medium">
-                                {{ participant.nickname[0]|upper }}
-                            </div>
-                            <span class="text-sm text-text">{{ participant.nickname }}</span>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="text-center py-8 text-muted">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    <p class="text-sm">No participants yet</p>
-                    <p class="text-xs mt-1">Share the join link to get started</p>
-                </div>
-            {% endif %}
-        </div>
-
     </div>
+
+    <!-- Participants Section -->
+    <div id="participantsSection" class="bg-surface/50 border border-border rounded-xl p-4 sm:p-6 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-text">Participants</h2>
+            <div class="flex items-center gap-3">
+                <div class="text-sm text-muted">
+                    {{ participants|length }} joined
+                </div>
+                <button id="refreshParticipantsBtn"
+                    class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-surface text-text border border-border shadow-sm hover:bg-surface/70 h-8 w-8 p-0 cursor-pointer"
+                    title="Refresh participants">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                        <path d="M21 3v5h-5" />
+                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                        <path d="M8 16H3v5" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        {% if participants %}
+        <div class="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {% for participant in participants %}
+            <div class="bg-background border border-border rounded-lg p-3 flex items-center gap-2">
+                <div
+                    class="w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center text-sm font-medium">
+                    {{ participant.nickname[0]|upper }}
+                </div>
+                <span class="text-sm text-text">{{ participant.nickname }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-muted">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="mx-auto mb-4">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <p class="text-sm">No participants yet</p>
+            <p class="text-xs mt-1">Share the join link to get started</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const startSessionBtn = document.getElementById('startSessionBtn');
-    const refreshPinBtn = document.getElementById('refreshPinBtn');
-    const refreshParticipantsBtn = document.getElementById('refreshParticipantsBtn');
-    const pinCodeElement = document.getElementById('pinCode');
-    const countdownText = document.getElementById('countdownText');
-    const countdownElement = document.getElementById('countdown');
-    const descriptionToggle = document.getElementById('descriptionToggle');
-    const descriptionText = document.getElementById('descriptionText');
-    const toggleText = document.getElementById('toggleText');
-    const toggleIcon = document.getElementById('toggleIcon');
-    
-    let countdownInterval;
-    let expiresAt;
-    let isDescriptionExpanded = false;
-    
-    // Initialize description truncation
-    function initializeDescription() {
-        if (descriptionText && descriptionToggle) {
-            const textLength = descriptionText.textContent.length;
-            if (textLength > 150) {
+    document.addEventListener('DOMContentLoaded', function () {
+        const startSessionBtn = document.getElementById('startSessionBtn');
+        const refreshPinBtn = document.getElementById('refreshPinBtn');
+        const refreshParticipantsBtn = document.getElementById('refreshParticipantsBtn');
+        const pinCodeElement = document.getElementById('pinCode');
+        const countdownText = document.getElementById('countdownText');
+        const countdownElement = document.getElementById('countdown');
+        const descriptionToggle = document.getElementById('descriptionToggle');
+        const descriptionText = document.getElementById('descriptionText');
+        const toggleText = document.getElementById('toggleText');
+        const toggleIcon = document.getElementById('toggleIcon');
+
+        let countdownInterval;
+        let expiresAt;
+        let isDescriptionExpanded = false;
+
+        // Initialize description truncation
+        function initializeDescription() {
+            if (descriptionText && descriptionToggle) {
+                const textLength = descriptionText.textContent.length;
+                if (textLength > 150) {
+                    descriptionText.classList.add('description-truncated');
+                    isDescriptionExpanded = false;
+                } else {
+                    // Hide toggle button for short descriptions
+                    descriptionToggle.style.display = 'none';
+                }
+            }
+        }
+
+        // Toggle description expansion
+        function toggleDescription() {
+            if (!descriptionText || !descriptionToggle) return;
+
+            if (isDescriptionExpanded) {
+                descriptionText.classList.remove('description-expanded');
                 descriptionText.classList.add('description-truncated');
-                isDescriptionExpanded = false;
+                toggleText.textContent = 'Show more';
+                toggleIcon.classList.remove('toggle-icon-rotated');
             } else {
-                // Hide toggle button for short descriptions
-                descriptionToggle.style.display = 'none';
+                descriptionText.classList.remove('description-truncated');
+                descriptionText.classList.add('description-expanded');
+                toggleText.textContent = 'Show less';
+                toggleIcon.classList.add('toggle-icon-rotated');
             }
+
+            isDescriptionExpanded = !isDescriptionExpanded;
         }
-    }
-    
-    // Toggle description expansion
-    function toggleDescription() {
-        if (!descriptionText || !descriptionToggle) return;
-        
-        if (isDescriptionExpanded) {
-            descriptionText.classList.remove('description-expanded');
-            descriptionText.classList.add('description-truncated');
-            toggleText.textContent = 'Show more';
-            toggleIcon.classList.remove('toggle-icon-rotated');
-        } else {
-            descriptionText.classList.remove('description-truncated');
-            descriptionText.classList.add('description-expanded');
-            toggleText.textContent = 'Show less';
-            toggleIcon.classList.add('toggle-icon-rotated');
+
+        // Add event listener for description toggle
+        if (descriptionToggle) {
+            descriptionToggle.addEventListener('click', toggleDescription);
         }
-        
-        isDescriptionExpanded = !isDescriptionExpanded;
-    }
-    
-    // Add event listener for description toggle
-    if (descriptionToggle) {
-        descriptionToggle.addEventListener('click', toggleDescription);
-    }
-    
-    // Initialize countdown timer
-    function startCountdown(expiresAtTime) {
-        expiresAt = new Date(expiresAtTime);
-        
-        if (countdownInterval) {
-            clearInterval(countdownInterval);
-        }
-        
-        function updateCountdown() {
-            const now = new Date();
-            const timeLeft = expiresAt - now;
-            
-            if (timeLeft <= 0) {
-                countdownText.textContent = 'PIN expired';
-                countdownElement.className = 'text-sm font-medium text-red-600';
+
+        // Initialize countdown timer
+        function startCountdown(expiresAtTime) {
+            expiresAt = new Date(expiresAtTime);
+
+            if (countdownInterval) {
                 clearInterval(countdownInterval);
-                return;
             }
-            
-            const minutes = Math.floor(timeLeft / (1000 * 60));
-            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-            
-            if (minutes > 0) {
-                countdownText.textContent = `Expires in ${minutes}m ${seconds}s`;
-            } else {
-                countdownText.textContent = `Expires in ${seconds}s`;
+
+            function updateCountdown() {
+                const now = new Date();
+                const timeLeft = expiresAt - now;
+
+                if (timeLeft <= 0) {
+                    countdownText.textContent = 'PIN expired';
+                    countdownElement.className = 'text-sm font-medium text-red-600';
+                    clearInterval(countdownInterval);
+                    return;
+                }
+
+                const minutes = Math.floor(timeLeft / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+                if (minutes > 0) {
+                    countdownText.textContent = `Expires in ${minutes}m ${seconds}s`;
+                } else {
+                    countdownText.textContent = `Expires in ${seconds}s`;
+                }
+
+                // Change color when less than 5 minutes
+                if (timeLeft < 5 * 60 * 1000) {
+                    countdownElement.className = 'text-sm font-medium text-red-600';
+                } else if (timeLeft < 10 * 60 * 1000) {
+                    countdownElement.className = 'text-sm font-medium text-orange-600';
+                } else {
+                    countdownElement.className = 'text-sm font-medium text-green-600';
+                }
             }
-            
-            // Change color when less than 5 minutes
-            if (timeLeft < 5 * 60 * 1000) {
-                countdownElement.className = 'text-sm font-medium text-red-600';
-            } else if (timeLeft < 10 * 60 * 1000) {
-                countdownElement.className = 'text-sm font-medium text-orange-600';
+
+            updateCountdown();
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        // Refresh PIN functionality
+        refreshPinBtn.addEventListener('click', async function () {
+            this.disabled = true;
+            this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1 animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Refreshing...';
+
+            try {
+                // Get CSRF token from hidden input
+                const csrfToken = document.getElementById('csrfToken').value;
+
+                const response = await fetch(`{{ url_for('sessions.refresh_pin', presentation_id=presentation.id) }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    pinCodeElement.textContent = data.pin_code;
+                    startCountdown(data.expires_at);
+                    fetchParticipants();
+
+                    // Update QR code
+                    const qrImg = document.querySelector('img[alt="QR Code for joining session"]');
+                    if (qrImg) {
+                        qrImg.src = data.qr_code;
+                    }
+
+                    // Update join URL
+                    const joinUrlElement = document.querySelector('code');
+                    if (joinUrlElement) {
+                        joinUrlElement.textContent = data.join_url;
+                    }
+
+                    // Show success notification
+                    showNotification('PIN refreshed successfully!', 'success');
+                } else {
+                    showNotification(data.error || 'Failed to refresh PIN', 'error');
+                }
+            } catch (error) {
+                showNotification('Error refreshing PIN', 'error');
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> Refresh PIN';
+            }
+        });
+
+        // Show notification helper using enhancedNotyf
+        function showNotification(message, type = 'info') {
+            if (window.notyf && window.notyfReady) {
+                window.notyf.open({ type: type, message: message });
             } else {
-                countdownElement.className = 'text-sm font-medium text-green-600';
+                // Fallback to console if notyf is not ready
+                console.log(`[${type.toUpperCase()}] ${message}`);
             }
         }
-        
-        updateCountdown();
-        countdownInterval = setInterval(updateCountdown, 1000);
-    }
-    
-    // Refresh PIN functionality
-    refreshPinBtn.addEventListener('click', async function() {
-        this.disabled = true;
-        this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1 animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Refreshing...';
-        
-        try {
-            // Get CSRF token from hidden input
-            const csrfToken = document.getElementById('csrfToken').value;
-            
-            const response = await fetch(`/presentations/{{ presentation.id }}/refresh-pin`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
+
+        // Start session button functionality
+        startSessionBtn.addEventListener('click', async function () {
+            this.disabled = true;
+            this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Starting...';
+
+            try {
+                // Get CSRF token from hidden input
+                const csrfToken = document.getElementById('csrfToken').value;
+
+                const response = await fetch(`{{ url_for('sessions.start_session', presentation_id=presentation.id) }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Session created successfully
+                    console.log('Session created:', data.session);
+
+                    // Update button to show session is active
+                    this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Session Active';
+                    this.classList.remove('animate-pulse-scale');
+                    this.classList.add('bg-green-600', 'hover:bg-green-700');
+
+                    showNotification('Session started successfully!', 'success');
+
+                    // TODO: Navigate to session management or question display
+                    // For now, keep showing the run page with active session
+                } else {
+                    showNotification(data.error || 'Failed to start session', 'error');
+                    this.disabled = false;
+                    this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start Session';
                 }
-            });
-            
-            const data = await response.json();
-            
-            if (response.ok) {
-                pinCodeElement.textContent = data.pin;
-                startCountdown(data.expires_at);
-                fetchParticipants();
-                
-                // Update QR code
-                const qrImg = document.querySelector('img[alt="QR Code for joining session"]');
-                if (qrImg) {
-                    qrImg.src = data.qr_code;
-                }
-                
-                // Update join URL
-                const joinUrlElement = document.querySelector('code');
-                if (joinUrlElement) {
-                    joinUrlElement.textContent = data.join_url;
-                }
-                
-                // Show success notification
-                showNotification('PIN refreshed successfully!', 'success');
-            } else {
-                showNotification(data.error || 'Failed to refresh PIN', 'error');
-            }
-        } catch (error) {
-            showNotification('Error refreshing PIN', 'error');
-        } finally {
-            this.disabled = false;
-            this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> Refresh PIN';
-        }
-    });
-    
-    // Show notification helper using enhancedNotyf
-    function showNotification(message, type = 'info') {
-        if (window.notyf && window.notyfReady) {
-            window.notyf.open({ type: type, message: message });
-        } else {
-            // Fallback to console if notyf is not ready
-            console.log(`[${type.toUpperCase()}] ${message}`);
-        }
-    }
-    
-    // Start session button functionality
-    startSessionBtn.addEventListener('click', async function() {
-        this.disabled = true;
-        this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Starting...';
-        
-        try {
-            // Get CSRF token from hidden input
-            const csrfToken = document.getElementById('csrfToken').value;
-            
-            const response = await fetch(`/presentations/{{ presentation.id }}/start-session`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                }
-            });
-            
-            const data = await response.json();
-            
-            if (response.ok && data.success) {
-                // Session created successfully
-                console.log('Session created:', data.session);
-                
-                // Update button to show session is active
-                this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Session Active';
-                this.classList.remove('animate-pulse-scale');
-                this.classList.add('bg-green-600', 'hover:bg-green-700');
-                
-                showNotification('Session started successfully!', 'success');
-                
-                // TODO: Navigate to session management or question display
-                // For now, keep showing the run page with active session
-            } else {
-                showNotification(data.error || 'Failed to start session', 'error');
+            } catch (error) {
+                showNotification('Error starting session', 'error');
                 this.disabled = false;
                 this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start Session';
             }
-        } catch (error) {
-            showNotification('Error starting session', 'error');
-            this.disabled = false;
-            this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start Session';
-        }
-    });
-    
-    // Initialize countdown with current PIN expiration
-    // Get the initial expiration time from server
-    fetch(`/presentations/{{ presentation.id }}/pin-status`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.expires_at) {
-                startCountdown(data.expires_at);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching PIN status:', error);
         });
-    
-    // Participants auto-refresh functionality
-    let participantsRefreshInterval;
-    let lastKnownParticipants = [];
-    
-    function updateParticipantsDisplay(participants) {
-        const participantsSection = document.getElementById('participantsSection');
-        if (!participantsSection) return;
-        
-        // Find or create the content area (after the header)
-        let contentArea = participantsSection.querySelector('.grid');
-        if (!contentArea) {
-            contentArea = participantsSection.querySelector('.text-center');
-        }
-        
-        const countElement = participantsSection.querySelector('.text-sm.text-muted');
-        
-        // Update count
-        if (countElement) {
-            countElement.textContent = `${participants.length} joined`;
-        }
-        
-        if (participants.length === 0) {
-            // Show empty state
-            if (contentArea) {
-                contentArea.outerHTML = `
+
+        // Initialize countdown with current PIN expiration
+        // Get the initial expiration time from server
+        fetch(`{{ url_for('sessions.pin_status', presentation_id=presentation.id) }}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.expires_at) {
+                    startCountdown(data.expires_at);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching PIN status:', error);
+            });
+
+        // Participants auto-refresh functionality
+        let participantsRefreshInterval;
+        let lastKnownParticipants = [];
+
+        function updateParticipantsDisplay(participants) {
+            const participantsSection = document.getElementById('participantsSection');
+            if (!participantsSection) return;
+
+            // Find or create the content area (after the header)
+            let contentArea = participantsSection.querySelector('.grid');
+            if (!contentArea) {
+                contentArea = participantsSection.querySelector('.text-center');
+            }
+
+            const countElement = participantsSection.querySelector('.text-sm.text-muted');
+
+            // Update count in participants section
+            if (countElement) {
+                countElement.textContent = `${participants.length} joined`;
+            }
+
+            // Update header participant count
+            const headerCountElement = document.getElementById('headerCountNumber');
+            if (headerCountElement) {
+                headerCountElement.textContent = participants.length;
+            }
+
+            if (participants.length === 0) {
+                // Show empty state
+                if (contentArea) {
+                    contentArea.outerHTML = `
                     <div class="text-center py-8 text-muted">
                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                         <p class="text-sm">No participants yet</p>
                         <p class="text-xs mt-1">Share the join link to get started</p>
                     </div>
                 `;
-            }
-        } else {
-            // Show participants grid
-            if (contentArea) {
-                contentArea.outerHTML = `
+                }
+            } else {
+                // Show participants grid
+                if (contentArea) {
+                    contentArea.outerHTML = `
                     <div class="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                         ${participants.map(participant => `
                             <div class="bg-background border border-border rounded-lg p-3 flex items-center gap-2 animate-fade-in">
@@ -520,67 +660,67 @@ document.addEventListener('DOMContentLoaded', function() {
                         `).join('')}
                     </div>
                 `;
+                }
+            }
+
+            // Show notification for new participants
+            const newParticipants = participants.filter(p =>
+                !lastKnownParticipants.some(lp => lp.nickname === p.nickname)
+            );
+
+            lastKnownParticipants = [...participants];
+        }
+
+        async function fetchParticipants() {
+            try {
+                const response = await fetch(`{{ url_for('sessions.get_participants', presentation_id=presentation.id) }}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateParticipantsDisplay(data.participants || []);
+                }
+            } catch (error) {
+                console.error('Error fetching participants:', error);
             }
         }
-        
-        // Show notification for new participants
-        const newParticipants = participants.filter(p => 
-            !lastKnownParticipants.some(lp => lp.nickname === p.nickname)
-        );
-        
-        lastKnownParticipants = [...participants];
-    }
-    
-    async function fetchParticipants() {
-        try {
-            const response = await fetch(`/presentations/{{ presentation.id }}/participants`);
-            if (response.ok) {
-                const data = await response.json();
-                updateParticipantsDisplay(data.participants || []);
+
+        // Manual refresh participants button functionality
+        refreshParticipantsBtn.addEventListener('click', async function () {
+            this.disabled = true;
+            this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>';
+
+            try {
+                await fetchParticipants();
+            } catch (error) {
+                console.error('Error refreshing participants:', error);
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>';
             }
-        } catch (error) {
-            console.error('Error fetching participants:', error);
+        });
+
+        // Start participants auto-refresh
+        function startParticipantsRefresh() {
+            // Initial fetch
+            fetchParticipants();
+
+            // Set up interval to refresh every 5 seconds
+            participantsRefreshInterval = setInterval(fetchParticipants, 5000);
         }
-    }
-    
-    // Manual refresh participants button functionality
-    refreshParticipantsBtn.addEventListener('click', async function() {
-        this.disabled = true;
-        this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>';
-        
-        try {
-            await fetchParticipants();
-        } catch (error) {
-            console.error('Error refreshing participants:', error);
-        } finally {
-            this.disabled = false;
-            this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>';
-        }
+
+        // Stop participants refresh when page is hidden
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                clearInterval(participantsRefreshInterval);
+            } else {
+                startParticipantsRefresh();
+            }
+        });
+
+        // Start the refresh
+        startParticipantsRefresh();
+
+        // Initialize description truncation
+        initializeDescription();
     });
-    
-    // Start participants auto-refresh
-    function startParticipantsRefresh() {
-        // Initial fetch
-        fetchParticipants();
-        
-        // Set up interval to refresh every 5 seconds
-        participantsRefreshInterval = setInterval(fetchParticipants, 5000);
-    }
-    
-    // Stop participants refresh when page is hidden
-    document.addEventListener('visibilitychange', function() {
-        if (document.hidden) {
-            clearInterval(participantsRefreshInterval);
-        } else {
-            startParticipantsRefresh();
-        }
-    });
-    
-    // Start the refresh
-    startParticipantsRefresh();
-    
-    // Initialize description truncation
-    initializeDescription();
-});
 </script>
 {% endblock %}

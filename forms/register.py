@@ -1,9 +1,17 @@
+"""
+forms/register.py — Instructor registration form.
+
+Collects a new username, password, and confirmation password.  The
+:meth:`~RegisterForm.to_model` helper converts validated form data
+directly into a :class:`~models.user.User` domain object.
+"""
 from flask_wtf import FlaskForm
 import wtforms as forms
 from wtforms import validators
 from models.user import User
 
 class RegisterForm(FlaskForm):
+    """Form for registering a new instructor account."""
     username = forms.StringField('Username', [
         validators.DataRequired(message='Username is required'),
         validators.Length(min=3, max=50, message='Username must be between 3 and 50 characters'),

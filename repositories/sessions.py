@@ -1,26 +1,14 @@
-import json
 import os
 import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
+from utils.path_utils import (
+    get_user_sessions_dir,
+    get_presentation_sessions_dir,
+    get_session_file_path,
+)
+from utils.file_utils import read_json_file, write_json_file, delete_file, FileOperationError
 
-def get_user_sessions_dir(username: str) -> str:
-    """Get the sessions directory for a user"""
-    sessions_dir = f"data/instructors/{username}/sessions"
-    os.makedirs(sessions_dir, exist_ok=True)
-    return sessions_dir
-
-def get_presentation_sessions_dir(username: str, presentation_uuid: str) -> str:
-    """Get the sessions directory for a specific presentation"""
-    user_sessions_dir = get_user_sessions_dir(username)
-    presentation_sessions_dir = f"{user_sessions_dir}/{presentation_uuid}"
-    os.makedirs(presentation_sessions_dir, exist_ok=True)
-    return presentation_sessions_dir
-
-def get_session_file_path(username: str, presentation_uuid: str, session_uuid: str) -> str:
-    """Get the session file path"""
-    presentation_sessions_dir = get_presentation_sessions_dir(username, presentation_uuid)
-    return f"{presentation_sessions_dir}/{session_uuid}.json"
 
 def create_session(session_uuid, username: str, presentation_uuid: str, participants: List[Dict] = None) -> Dict:
     """Create a new session and return session data"""
@@ -34,6 +22,7 @@ def create_session(session_uuid, username: str, presentation_uuid: str, particip
     session_data = {
         'session_uuid': session_uuid,
         'presentation_uuid': presentation_uuid,
+        'username': username,
         'created_at': created_at,
         'status': 'active',
         'participants': participants if participants else []
@@ -41,22 +30,16 @@ def create_session(session_uuid, username: str, presentation_uuid: str, particip
     
     # Save session to file
     session_file_path = get_session_file_path(username, presentation_uuid, session_uuid)
-    with open(session_file_path, 'w') as f:
-        json.dump(session_data, f, indent=2)
+    write_json_file(session_file_path, session_data)
     
     return session_data
 
 def load_session(username: str, presentation_uuid: str, session_uuid: str) -> Optional[Dict]:
     """Load session data from file"""
     session_file_path = get_session_file_path(username, presentation_uuid, session_uuid)
-    
-    if not os.path.exists(session_file_path):
-        return None
-    
     try:
-        with open(session_file_path, 'r') as f:
-            return json.load(f)
-    except (json.JSONDecodeError, FileNotFoundError):
+        return read_json_file(session_file_path)
+    except FileOperationError:
         return None
 
 def update_session_participants(username: str, presentation_uuid: str, session_uuid: str, participants: List[Dict]) -> bool:
@@ -70,10 +53,9 @@ def update_session_participants(username: str, presentation_uuid: str, session_u
     # Save updated session data
     session_file_path = get_session_file_path(username, presentation_uuid, session_uuid)
     try:
-        with open(session_file_path, 'w') as f:
-            json.dump(session_data, f, indent=2)
+        write_json_file(session_file_path, session_data)
         return True
-    except (OSError, IOError):
+    except FileOperationError:
         return False
 
 def get_all_sessions_for_presentation(username: str, presentation_uuid: str) -> List[Dict]:
@@ -120,12 +102,4 @@ def get_all_sessions_for_user(username: str) -> List[Dict]:
 def delete_session(username: str, presentation_uuid: str, session_uuid: str) -> bool:
     """Delete a session file"""
     session_file_path = get_session_file_path(username, presentation_uuid, session_uuid)
-    
-    if os.path.exists(session_file_path):
-        try:
-            os.remove(session_file_path)
-            return True
-        except OSError:
-            return False
-    
-    return False
+    return delete_file(session_file_path)

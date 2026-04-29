@@ -1,6 +1,22 @@
+"""
+models/user.py — Instructor user domain model.
+
+Passwords are stored as SHA-256 hex digests.  The model intentionally has no
+dependency on Flask or the file store; persistence is handled exclusively by
+:mod:`repositories.users`.
+"""
 import hashlib
 from datetime import datetime, UTC
 class User:
+    """
+    Represents an instructor account.
+
+    Attributes:
+        username (str): Unique login name.
+        password_hash (str): SHA-256 hex digest of the user's password.
+        created_at (str): ISO-8601 timestamp of account creation (UTC with
+            trailing ``Z``).
+    """
     username: str
     password_hash: str
     created_at: str
