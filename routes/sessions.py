@@ -47,6 +47,10 @@ def run_presentation(presentation_id):
     run_data = runs_repo.load_run_data(username, presentation_id)
     participants = run_data.get('participants', []) if run_data else []
 
+    # Calculate objectives and questions count
+    objectives_count = len(presentation.objectives) if presentation.objectives else 0
+    questions_count = sum(len(obj.get('questions', [])) for obj in presentation.objectives) if presentation.objectives else 0
+
     return render_template(
         'instructor/run.html',
         presentation=presentation,
@@ -54,7 +58,9 @@ def run_presentation(presentation_id):
         qr_code=qr_code_data_uri,
         participants=participants,
         estimated_duration=presentation.calculate_estimated_duration(),
-        join_url=join_url
+        join_url=join_url,
+        objectives_count=objectives_count,
+        questions_count=questions_count
     )
 
 @routes.route('/presentations/<presentation_id>/refresh-pin', methods=['POST'])
@@ -147,6 +153,13 @@ def start_session(presentation_id):
             flash('Failed to create session: No session UUID generated', FLASH_ERROR)
             return redirect(url_for('sessions.run_presentation', presentation_id=presentation_id))
         
+        # Initialize session with objectives, questions, and sequencing
+        try:
+            SessionService.init_session(username, presentation_id, session_uuid)
+        except Exception as e:
+            flash(f'Failed to initialize session: {str(e)}', FLASH_ERROR)
+            return redirect(url_for('sessions.run_presentation', presentation_id=presentation_id))
+        
         # Redirect to the live session page
         return redirect(url_for('sessions.live_session', presentation_id=presentation_id, session_id=session_uuid))
     except Exception as e:
@@ -178,7 +191,7 @@ def live_session(presentation_id, session_id):
             return redirect(url_for('sessions.run_presentation', presentation_id=presentation_id))
         
         return render_template(
-            'instructor/live_session.html',
+            'instructor/session_instructor_question.html',
             presentation=presentation,
             session_data=session_data,
             session_id=session_id
@@ -186,3 +199,44 @@ def live_session(presentation_id, session_id):
     except Exception as e:
         flash(f'Failed to load session: {str(e)}', FLASH_ERROR)
         return redirect(url_for('sessions.run_presentation', presentation_id=presentation_id))
+
+@routes.route('/presentations/<presentation_id>/live_session/<session_id>/end_session', methods=['POST'])
+@require_instructor
+def end_session(presentation_id, session_id):
+    """
+    End the current live session.
+    
+    Updates session status to completed and redirects to presentation view page.
+    """
+    username = g.user.username
+    result = _load_presentation_or_abort(username, presentation_id, json_response=True)
+    if not isinstance(result, Presentation):
+        return result
+
+    try:
+        # End the session
+        SessionService.end_session(username, presentation_id, session_id)
+        
+        # Redirect to presentation view page
+        return redirect(url_for('presentations.presentation_page', presentation_id=presentation_id))
+    except Exception as e:
+        flash(f'Failed to end session: {str(e)}', FLASH_ERROR)
+        return redirect(url_for('sessions.live_session', presentation_id=presentation_id, session_id=session_id))
+
+@routes.route('/presentations/<presentation_id>/live_session/<session_id>/timing', methods=['GET'])
+@require_instructor
+def get_session_timing(presentation_id, session_id):
+    """
+    Return current session timing as JSON for JavaScript synchronization.
+    """
+    username = g.user.username
+    result = _load_presentation_or_abort(username, presentation_id, json_response=True)
+    if not isinstance(result, Presentation):
+        return result
+
+    try:
+        from services.live_session_service import LiveSessionService
+        timing_info = LiveSessionService.get_session_timing(username, presentation_id, session_id)
+        return jsonify(timing_info)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
