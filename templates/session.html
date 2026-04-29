@@ -2,29 +2,47 @@
 
 {% block content %}
 {% if session_data and session_data.status == 'active' %}
-<!-- Session is active - show normal content -->
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6">Session Active</h1>
-    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-        <p>Session is now active! You can participate in the presentation.</p>
+    {% if current_question and not is_time_expired %}
+    <!-- Active question screen -->
+    {% include "session_participant_question.html" %}
+    {% elif is_time_expired %}
+    <!-- Waiting for next question screen -->
+    <div id="waiting-next-question" class="h-[60vh] flex items-center justify-center px-4">
+        <div class="max-w-md w-full text-center">
+            <div class="mb-8">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+            </div>
+            <h1 class="text-3xl font-bold mb-4 text-text">Time's Up!</h1>
+            <p class="text-muted mb-6">The question time has ended. Waiting for the next question...</p>
+            <div class="bg-accent/10 border border-accent/20 text-accent px-4 py-3 rounded">
+                <p class="text-sm">Question {{ current_question_index }} of {{ total_questions }}</p>
+            </div>
+        </div>
     </div>
-    <!-- Add your normal session content here -->
-</div>
+    {% else %}
+    <!-- Session active but no question yet -->
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-6">Session Active</h1>
+        <div class="bg-accent/10 border border-accent/20 text-accent px-4 py-3 rounded">
+            <p>Session is now active! Waiting for the first question...</p>
+        </div>
+    </div>
+    {% endif %}
 {% else %}
 <!-- Session is not active - show waiting state -->
-<div id="waiting-state" class="container mx-auto px-4 py-8">
-    <div class="max-w-md mx-auto text-center">
+<div id="waiting-state" class="h-[60vh] flex items-center justify-center px-4">
+    <div class="max-w-md w-full text-center">
         <div class="mb-8">
-            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
         </div>
         {% if session_data and session_data.status == 'waiting' %}
-        <h1 class="text-3xl font-bold mb-4">Session Lobby</h1>
-        <p class="text-gray-600 mb-6">You've joined the session! Waiting for the instructor to start the presentation...</p>
+        <h1 class="text-3xl font-bold mb-4 text-text">Session Lobby</h1>
+        <p class="text-muted mb-6">You've joined the session! Waiting for the instructor to start the presentation...</p>
         {% else %}
-        <h1 class="text-3xl font-bold mb-4">Waiting for Session to Start</h1>
-        <p class="text-gray-600 mb-6">The instructor hasn't started the session yet. Please wait...</p>
+        <h1 class="text-3xl font-bold mb-4 text-text">Waiting for Session to Start</h1>
+        <p class="text-muted mb-6">The instructor hasn't started the session yet. Please wait...</p>
         {% endif %}
-        <div class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
+        <div class="bg-accent/10 border border-accent/20 text-accent px-4 py-3 rounded">
             <p class="text-sm">We're checking every 5 seconds for the session to begin.</p>
         </div>
     </div>
@@ -33,7 +51,7 @@
 {% endblock %}
 
 {% block scripts %}
-{% if not session_data or session_data.status != 'active' %}
+{% if not session_data or session_data.status != 'active' or is_time_expired %}
 <script>
 // CSRF token handling for Flask-WTF
 function getCSRFToken() {
@@ -59,8 +77,8 @@ function getCSRFToken() {
     return cookieValue;
 }
 
-// Poll session status every 5 seconds
-let pollInterval = setInterval(checkSessionStatus, 5000);
+// Poll session status every 2 seconds for more responsive updates
+let pollInterval = setInterval(checkSessionStatus, 2000);
 
 async function checkSessionStatus() {
     try {
@@ -75,15 +93,24 @@ async function checkSessionStatus() {
         
         const data = await response.json();
         
-        if (data.success && data.status === 'active') {
-            // Session is now active, reload the page
-            window.location.reload();
+        // Check for any state changes that require page reload
+        if (data.success) {
+            // If session becomes active or new question is available, reload
+            if (data.status === 'active' || data.has_new_question) {
+                window.location.reload();
+            }
         }
     } catch (error) {
         console.error('Error checking session status:', error);
     }
 }
 
+// Clean up polling when page is unloaded
+window.addEventListener('beforeunload', function() {
+    if (pollInterval) {
+        clearInterval(pollInterval);
+    }
+});
 
 </script>
 {% endif %}
