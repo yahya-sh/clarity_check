@@ -16,10 +16,12 @@ from repositories.sessions import (
     get_all_sessions_for_presentation,
     get_all_sessions_for_user
 )
-from repositories import runs_repo
+from repositories import runs_repo, presentations_repo
 from repositories.base import NotFoundError, ValidationError
 from models.participant import Participant
 from config.constants import STATUS_ACTIVE
+import random
+from datetime import datetime, timedelta
 
 
 class SessionService:
@@ -436,5 +438,132 @@ class SessionService:
             # Log the error but don't fail the session creation
             # The session was successfully created, so we continue
             print(f"Warning: Failed to delete run data file after session creation: {str(e)}")
+        
+        return session_data
+    
+    @staticmethod
+    def init_session(username: str, presentation_uuid: str, session_uuid: str) -> Dict[str, Any]:
+        """
+        Initialize session with objectives, questions, and question sequencing.
+        
+        Fetches all objectives and questions from the related presentation,
+        stores them as key-value pairs with parent references, creates shuffled
+        question sequence, and sets up current question timing.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            
+        Returns:
+            Updated session data dictionary
+            
+        Raises:
+            NotFoundError: If presentation or session not found
+            ValidationError: If required data is missing
+        """
+        # Load presentation data
+        presentation = presentations_repo.load_presentation(username, presentation_uuid)
+        if not presentation:
+            raise NotFoundError("Presentation not found")
+        
+        # Load current session data
+        session_data = SessionService.get_session(username, presentation_uuid, session_uuid)
+        
+        # Process objectives into key-value pairs (without questions array)
+        objectives_dict = {}
+        for objective in presentation.objectives:
+            objective_id = objective.get('objective_id')
+            if objective_id:
+                # Create a copy of objective without questions array
+                objective_clean = objective.copy()
+                objective_clean.pop('questions', None)
+                objectives_dict[objective_id] = objective_clean
+        
+        # Process questions into key-value pairs with parent objective references
+        questions_dict = {}
+        question_uuids = []
+        
+        for objective in presentation.objectives:
+            objective_id = objective.get('objective_id')
+            questions = objective.get('questions', [])
+            
+            for question in questions:
+                question_id = question.get('question_id')
+                if question_id:
+                    # Add parent objective reference to question
+                    question_with_parent = question.copy()
+                    question_with_parent['parent_objective_id'] = objective_id
+                    
+                    questions_dict[question_id] = question_with_parent
+                    question_uuids.append(question_id)
+        
+        # Create shuffled array of question UUIDs
+        shuffled_question_uuids = question_uuids.copy()
+        random.shuffle(shuffled_question_uuids)
+        
+        # Set initial current question and timing
+        current_question_uuid = None
+        start_time = None
+        end_time = None
+        
+        if shuffled_question_uuids:
+            current_question_uuid = shuffled_question_uuids[0]
+            first_question = questions_dict.get(current_question_uuid)
+            if first_question:
+                time_limit = first_question.get('time_limit', 30)
+                start_time = datetime.now().isoformat()
+                end_time = (datetime.now() + timedelta(seconds=time_limit)).isoformat()
+        
+        # Update session data with new properties
+        session_data.update({
+            'objectives': objectives_dict,
+            'questions': questions_dict,
+            'shuffled_question_uuids': shuffled_question_uuids,
+            'current_question_uuid': current_question_uuid,
+            'start_time': start_time,
+            'end_time': end_time
+        })
+        
+        # Save updated session data
+        session_file_path = f"/Users/ysh/Remotecoders/Final_Project/Project/data/instructors/{username}/sessions/{presentation_uuid}/{session_uuid}.json"
+        from utils.file_utils import write_json_file
+        write_json_file(session_file_path, session_data)
+        
+        return session_data
+    
+    @staticmethod
+    def end_session(username: str, presentation_uuid: str, session_uuid: str) -> Dict[str, Any]:
+        """
+        End a session by updating its status to completed.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            
+        Returns:
+            Updated session data dictionary
+            
+        Raises:
+            NotFoundError: If session not found
+            ValidationError: If session update fails
+        """
+        # Get current session data
+        session_data = SessionService.get_session(username, presentation_uuid, session_uuid)
+        
+        # Update session status to completed
+        session_data['status'] = 'completed'
+        session_data['ended_at'] = datetime.now().isoformat()
+        
+        # Clear current question timing
+        session_data['current_question_uuid'] = None
+        session_data['start_time'] = None
+        session_data['end_time'] = None
+        
+        # Save updated session data
+        session_file_path = f"/Users/ysh/Remotecoders/Final_Project/Project/data/instructors/{username}/sessions/{presentation_uuid}/{session_uuid}.json"
+        from utils.file_utils import write_json_file
+        write_json_file(session_file_path, session_data)
         
         return session_data
