@@ -96,9 +96,12 @@ function pollForNextQuestion() {
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.has_new_question) {
-                // Reload page for next question
-                window.location.reload();
+            if (data.success) {
+                // Check for state changes that require page reload
+                if (data.has_new_question) {
+                    // Reload page for next question
+                    window.location.reload();
+                }
             }
         })
         .catch(error => {
@@ -106,8 +109,8 @@ function pollForNextQuestion() {
         });
     }, 2000);
     
-    // Clear polling after 30 seconds to prevent infinite polling
-    setTimeout(() => clearInterval(pollInterval), 30000);
+    // Clear polling after 60 seconds to prevent infinite polling
+    setTimeout(() => clearInterval(pollInterval), 60000);
 }
 
 // Initialize
