@@ -1,0 +1,124 @@
+<div class="container mx-auto max-w-4xl px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header with Progress Bars -->
+        <div class="flex justify-between items-start mb-8">
+            <!-- Question Progress (Top Left) -->
+            <div class="relative">
+                <div class="w-20 h-20 relative">
+                    <svg class="w-20 h-20 transform -rotate-90">
+                        <circle cx="40" cy="40" r="36" stroke="currentColor" stroke-width="8" fill="none" class="text-border"></circle>
+                        <circle cx="40" cy="40" r="36" stroke="currentColor" stroke-width="8" fill="none" 
+                                class="text-accent transition-all duration-300"
+                                stroke-dasharray="{{ (current_question_index / total_questions * 226) if total_questions > 0 else 0 }} 226"
+                                stroke-linecap="round"></circle>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-sm font-semibold">{{ current_question_index }}/{{ total_questions }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timer Progress (Top Right) -->
+            <div class="relative">
+                <div class="w-20 h-20 relative">
+                    <svg class="w-20 h-20 transform -rotate-90">
+                        <circle cx="40" cy="40" r="36" stroke="currentColor" stroke-width="8" fill="none" class="text-border"></circle>
+                        <circle id="timerCircle" cx="40" cy="40" r="36" stroke="currentColor" stroke-width="8" fill="none" 
+                                class="text-accent transition-all duration-1000"
+                                stroke-dasharray="226 226"
+                                stroke-linecap="round"></circle>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="timerText" class="text-lg font-bold">{{ "%.0f"|format(timing_info.time_remaining|default(0)) if timing_info and timing_info.time_remaining > 0 else "0" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Waiting State Content -->
+        <div class="bg-surface/50 border border-border rounded-xl p-8 mb-6 text-center">
+            <div class="mb-8">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-accent mb-4"></div>
+                <h2 class="text-2xl font-bold mb-4">Answer Submitted!</h2>
+                <p class="text-lg text-muted mb-2">Your answer has been recorded.</p>
+                <p class="text-lg text-muted">Waiting for the next question...</p>
+            </div>
+
+            <!-- Current Question Info (Read-only) -->
+            {% if current_question %}
+            <div class="bg-background/50 border border-border rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-3 text-muted">Current Question {{ current_question_index }}</h3>
+                <p class="text-base text-muted">{{ current_question.text if current_question else "" }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Status Indicator -->
+            <div class="bg-accent/10 border border-accent/20 text-accent px-4 py-3 rounded">
+                <p class="text-sm">We'll automatically show the next question when it's available.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Timer functionality (read-only display)
+let timerInterval;
+let timeRemaining = parseFloat('{{ timing_info.time_remaining|default(0) }}') || 0;
+const totalTime = parseInt('{{ current_question.time_limit|default(30) }}') || 30;
+
+function updateTimer() {
+    if (timeRemaining <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById('timerText').textContent = '0';
+        return;
+    }
+
+    timeRemaining--;
+    document.getElementById('timerText').textContent = Math.ceil(timeRemaining);
+    
+    // Update circular progress
+    const progress = Math.max(0, timeRemaining / totalTime);
+    const circumference = 2 * Math.PI * 36;
+    const dashArray = circumference * progress;
+    document.getElementById('timerCircle').style.strokeDasharray = `${dashArray} ${circumference}`;
+}
+
+// Poll for next question
+function pollForNextQuestion() {
+    const pollInterval = setInterval(() => {
+        fetch('/api/check-session-status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.has_new_question) {
+                // Reload page for next question
+                window.location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error polling for next question:', error);
+        });
+    }, 2000);
+    
+    // Clear polling after 30 seconds to prevent infinite polling
+    setTimeout(() => clearInterval(pollInterval), 30000);
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Start timer if time remaining
+    if (timeRemaining > 0) {
+        timerInterval = setInterval(updateTimer, 1000);
+        updateTimer(); // Initial update
+    }
+    
+    // Start polling for next question
+    pollForNextQuestion();
+});
+</script>
