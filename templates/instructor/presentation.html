@@ -758,43 +758,6 @@
         };
     }
 
-    function validateQuestionPayloadInOrder(payload) {
-        // 1) text empty or less than 3 chars
-        if (!payload.text) {
-            return 'Question text is required.';
-        }
-        if (payload.text.length < 3) {
-            return 'Question text must be at least 3 characters.';
-        }
-
-        // 2) points zero or time less than 5 seconds
-        const pointsNumber = Number(payload.points);
-        const timeLimitNumber = Number(payload.time_limit);
-        if (!Number.isInteger(pointsNumber) || pointsNumber <= 0) {
-            return 'Points must be a positive non-zero integer.';
-        }
-        if (!Number.isInteger(timeLimitNumber) || timeLimitNumber < 5) {
-            return 'Time limit must be at least 5 seconds.';
-        }
-
-        // 3) less than two choices
-        if (payload.choices.length < 2) {
-            return 'Please provide at least two choices.';
-        }
-
-        // 4) no correct answer selected
-        if (payload.correct_indices.length < 1) {
-            return 'Please choose at least one correct answer.';
-        }
-
-        // Extra consistency for single choice type
-        if (payload.type === 'single_choice' && payload.correct_indices.length > 1) {
-            return 'For single_choice, only one correct choice is allowed.';
-        }
-
-        return '';
-    }
-
     function renderQuestions(questions) {
         questionsList.innerHTML = '';
         objectiveQuestionsMap = new Map();
