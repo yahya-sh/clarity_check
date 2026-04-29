@@ -219,6 +219,19 @@ def live_session(presentation_id, session_id):
             # Get answer statistics
             answers_statistics = session_data.get('answers_statistics', {})
             
+            # Calculate enhanced statistics for results display
+            enhanced_stats = {}
+            if current_question_uuid:
+                try:
+                    enhanced_stats_result = LiveSessionService.calculate_enhanced_statistics(
+                        username, presentation_id, session_id, current_question_uuid
+                    )
+                    if enhanced_stats_result.get('success'):
+                        enhanced_stats = enhanced_stats_result
+                except Exception:
+                    # If enhanced stats fail, continue with basic stats
+                    pass
+            
             return render_template(
                 'instructor/session_instructor_question_result.html',
                 presentation=presentation,
@@ -229,7 +242,8 @@ def live_session(presentation_id, session_id):
                 total_questions=total_questions,
                 progress_percentage=progress_percentage,
                 answer_statistics=answers_statistics,
-                participants_map=participants_map
+                participants_map=participants_map,
+                enhanced_stats=enhanced_stats
             )
         
         # Check if session is active
