@@ -13,8 +13,9 @@ from services import qr_service
 from services.pin_service import get_or_renew_pin, refresh_pin as service_refresh_pin
 from services.qr_service import generate_qr_code
 from services.session_service import SessionService
+from services.live_session_service import LiveSessionService
 from utils.response_utils import ResponseUtils
-from config.constants import FLASH_SUCCESS, FLASH_ERROR
+from config.constants import FLASH_SUCCESS, FLASH_ERROR, SESSION_PENDING, SESSION_ACTIVE
 from models.presentation import Presentation
 from routes._helpers import _load_presentation_or_abort
 
@@ -184,42 +185,73 @@ def live_session(presentation_id, session_id):
     try:
         # Load session data
         session_data = SessionService.get_session(username, presentation_id, session_id)
+        session_status = session_data.get('status')
         
-        # Check if session is active
-        if not SessionService.is_session_active(username, presentation_id, session_id):
-            flash('Session not found or not active', FLASH_ERROR)
-            return redirect(url_for('sessions.run_presentation', presentation_id=presentation_id))
-        
-        # Calculate initial timing and progress values
-        timing_info = None
+        # Calculate progress values (needed for both template types)
+        current_question_uuid = session_data.get('current_question_uuid')
         current_question_index = 0
         total_questions = 0
         progress_percentage = 0
+        
+        if session_data.get('shuffled_question_uuids'):
+            total_questions = len(session_data['shuffled_question_uuids'])
+            if current_question_uuid and current_question_uuid in session_data['shuffled_question_uuids']:
+                current_question_index = session_data['shuffled_question_uuids'].index(current_question_uuid) + 1
+        
+        progress_percentage = (current_question_index / total_questions * 100) if total_questions > 0 else 0
+        
+        # Render template based on session status
+        if session_status == SESSION_PENDING:
+            # Load data for results template
+            current_question = None
+            participants_map = {}
+            
+            if current_question_uuid:
+                # Get current question data
+                questions = session_data.get('questions', {})
+                if current_question_uuid in questions:
+                    current_question = questions[current_question_uuid]
+                
+                # Create participants map
+                for participant in session_data.get('participants', []):
+                    participants_map[participant['uuid']] = participant
+            
+            # Get answer statistics
+            answers_statistics = session_data.get('answers_statistics', {})
+            
+            return render_template(
+                'instructor/session_instructor_question_result.html',
+                presentation=presentation,
+                session_data=session_data,
+                session_id=session_id,
+                current_question=current_question,
+                current_question_index=current_question_index,
+                total_questions=total_questions,
+                progress_percentage=progress_percentage,
+                answer_statistics=answers_statistics,
+                participants_map=participants_map
+            )
+        
+        # Check if session is active
+        elif session_status != SESSION_ACTIVE:
+            flash('Session not found or not active', FLASH_ERROR)
+            return redirect(url_for('sessions.run_presentation', presentation_id=presentation_id))
+
+        # Calculate initial timing and progress values for active session
+        timing_info = None
         initial_time_remaining = 0
         is_time_expired = False
         
         try:
-            from services.live_session_service import LiveSessionService
-            
             # Get timing information
             timing_info = LiveSessionService.get_session_timing(username, presentation_id, session_id)
             initial_time_remaining = timing_info.get('time_remaining', 0) or 0
             is_time_expired = LiveSessionService.is_question_time_expired(username, presentation_id, session_id)
             
-            # Calculate question progress
-            if session_data.get('shuffled_question_uuids'):
-                total_questions = len(session_data['shuffled_question_uuids'])
-                current_uuid = timing_info.get('current_question_uuid') if timing_info else None
-                if current_uuid and current_uuid in session_data['shuffled_question_uuids']:
-                    current_question_index = session_data['shuffled_question_uuids'].index(current_uuid) + 1
-            
-            # Calculate progress percentage
-            progress_percentage = (current_question_index / total_questions * 100) if total_questions > 0 else 0
-            
         except Exception:
             # If timing service fails, continue with default values
             pass
-        
+
         return render_template(
             'instructor/session_instructor_question.html',
             presentation=presentation,
@@ -259,6 +291,104 @@ def end_session(presentation_id, session_id):
         flash(f'Failed to end session: {str(e)}', FLASH_ERROR)
         return redirect(url_for('sessions.live_session', presentation_id=presentation_id, session_id=session_id))
 
+@routes.route('/presentations/<presentation_id>/live_session/<session_id>/show_results', methods=['POST'])
+@require_instructor
+def show_question_results(presentation_id, session_id):
+    """
+    Calculate and display answer statistics for the current question.
+    
+    Processes the current question's answers, calculates statistics,
+    stores them in the session data, and redirects to the results page.
+    """
+    username = g.user.username
+    result = _load_presentation_or_abort(username, presentation_id)
+    if not isinstance(result, Presentation):
+        return result
+    presentation = result
+
+    try:
+        # Load session data
+        session_data = SessionService.get_session(username, presentation_id, session_id)
+        
+        # Check if session is active
+        if not SessionService.is_session_active(username, presentation_id, session_id):
+            flash('Session not found or not active', FLASH_ERROR)
+            return redirect(url_for('sessions.run_presentation', presentation_id=presentation_id))
+        
+        # Get current question UUID
+        current_question_uuid = session_data.get('current_question_uuid')
+        if not current_question_uuid:
+            flash('No active question to show results for', FLASH_ERROR)
+            return redirect(url_for('sessions.live_session', presentation_id=presentation_id, session_id=session_id))
+        
+        # Calculate statistics using service method
+        try:
+            result = LiveSessionService.calculate_statistics(
+                username, presentation_id, session_id, current_question_uuid
+            )
+            
+            if not result['success']:
+                flash(f"Failed to calculate statistics: {result.get('error', 'Unknown error')}", FLASH_ERROR)
+                return redirect(url_for('sessions.live_session', presentation_id=presentation_id, session_id=session_id))
+            
+            # Extract data from service result
+            statistics = result['statistics']
+            participants_map = result['participants_map']
+            current_question = result['current_question']
+            
+            # Update session status to pending
+            status_updated = LiveSessionService.update_session_status(
+                username, presentation_id, session_id, SESSION_PENDING
+            )
+            
+            if not status_updated:
+                flash('Warning: Failed to update session status', FLASH_ERROR)
+                
+        except Exception as e:
+            flash(f'Failed to calculate answer statistics: {str(e)}', FLASH_ERROR)
+            return redirect(url_for('sessions.live_session', presentation_id=presentation_id, session_id=session_id))
+        
+        # Redirect to live_session endpoint which will check status and render appropriate template
+        return redirect(url_for('sessions.live_session', presentation_id=presentation_id, session_id=session_id))
+        
+    except Exception as e:
+        flash(f'Failed to show results: {str(e)}', FLASH_ERROR)
+        return redirect(url_for('sessions.live_session', presentation_id=presentation_id, session_id=session_id))
+
+@routes.route('/presentations/<presentation_id>/live_session/<session_id>/next_question', methods=['POST'])
+@require_instructor
+def next_question(presentation_id, session_id):
+    """
+    Move to the next question in the session.
+    
+    Advances the session to the next question and redirects back to the live session page.
+    """
+    username = g.user.username
+    result = _load_presentation_or_abort(username, presentation_id)
+    if not isinstance(result, Presentation):
+        return result
+
+    try:
+        # Move to next question using the live session service
+        LiveSessionService.move_to_next_question(
+            username, presentation_id, session_id
+        )
+        
+        # Update session status to active
+        status_updated = LiveSessionService.update_session_status(
+            username, presentation_id, session_id, SESSION_ACTIVE
+        )
+        
+        if not status_updated:
+            flash('Warning: Failed to update session status to active', FLASH_ERROR)
+        
+        # Redirect back to the live session page
+        return redirect(url_for('sessions.live_session', presentation_id=presentation_id, session_id=session_id))
+        
+    except Exception as e:
+        flash(f'Failed to move to next question: {str(e)}', FLASH_ERROR)
+        return redirect(url_for('sessions.live_session', presentation_id=presentation_id, session_id=session_id))
+
 @routes.route('/presentations/<presentation_id>/live_session/<session_id>/timing', methods=['GET'])
 @require_instructor
 def get_session_timing(presentation_id, session_id):
@@ -271,7 +401,6 @@ def get_session_timing(presentation_id, session_id):
         return result
 
     try:
-        from services.live_session_service import LiveSessionService
         timing_info = LiveSessionService.get_session_timing(username, presentation_id, session_id)
         return jsonify(timing_info)
     except Exception as e:
