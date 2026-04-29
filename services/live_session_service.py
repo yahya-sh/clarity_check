@@ -182,6 +182,35 @@ class LiveSessionService:
         return timing_info
     
     @staticmethod
+    def calculate_participant_response_time(
+        username: str,
+        presentation_uuid: str,
+        session_uuid: str
+    ) -> float:
+        """
+        Calculate the response time for a participant based on current question timing.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            
+        Returns:
+            Response time in seconds (0.0 if timing calculation fails)
+        """
+        try:
+            timing_info = LiveSessionService.get_session_timing(
+                username, presentation_uuid, session_uuid
+            )
+            start_time_str = timing_info.get('start_time')
+            if start_time_str:
+                start_time = datetime.fromisoformat(start_time_str)
+                return (datetime.now() - start_time).total_seconds()
+            return 0.0
+        except Exception:
+            return 0.0
+    
+    @staticmethod
     def is_question_time_expired(
         username: str,
         presentation_uuid: str,
@@ -279,7 +308,8 @@ class LiveSessionService:
         session_uuid: str,
         user_uuid: str,
         question_uuid: str,
-        answer_indices: List[int]
+        answer_indices: List[int],
+        response_time: float = 0.0
     ) -> bool:
         """
         Set or update a user's answer for a specific question in the session.
@@ -291,6 +321,7 @@ class LiveSessionService:
             user_uuid: UUID of the user
             question_uuid: UUID of the question
             answer_indices: List of selected answer indices
+            response_time: Time taken to answer in seconds
             
         Returns:
             True if successful, False otherwise
@@ -320,6 +351,17 @@ class LiveSessionService:
         
         # Increment answer count for the question by 1
         session_data['answers_count'][question_uuid] += 1
+        
+        # Initialize response_times if it doesn't exist
+        if 'response_times' not in session_data:
+            session_data['response_times'] = {}
+        
+        # Initialize question_uuid entry in response_times if it doesn't exist
+        if question_uuid not in session_data['response_times']:
+            session_data['response_times'][question_uuid] = []
+        
+        # Add response time for this participant
+        session_data['response_times'][question_uuid].append(response_time)
         
         # Save updated session data
         session_file_path = get_session_file_path(username, presentation_uuid, session_uuid)
@@ -521,6 +563,144 @@ class LiveSessionService:
             
         except Exception as e:
             return {'success': False, 'error': str(e)}
+    
+    @staticmethod
+    def calculate_enhanced_statistics(
+        username: str,
+        presentation_uuid: str,
+        session_uuid: str,
+        question_uuid: str
+    ) -> Dict[str, Any]:
+        """
+        Calculate enhanced statistics for question results display.
+        
+        Includes correct answer count, response time, clarity analysis,
+        and other metrics needed for the comprehensive results view.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            question_uuid: UUID of the question
+            
+        Returns:
+            Dictionary with enhanced statistics data
+        """
+        try:
+            # Load session data
+            session_data = load_session(username, presentation_uuid, session_uuid)
+            if not session_data:
+                return {'success': False, 'error': 'Session not found'}
+            
+            # Get current question data
+            questions = session_data.get('questions', {})
+            current_question = questions.get(question_uuid)
+            if not current_question:
+                return {'success': False, 'error': 'Question not found'}
+            
+            # Get basic answer statistics
+            answer_statistics = LiveSessionService.calculate_answer_statistics(
+                username, presentation_uuid, session_uuid, question_uuid
+            )
+            
+            # Calculate total responded participants
+            total_responded = 0
+            for choice_responses in answer_statistics.values():
+                total_responded += len(choice_responses)
+            
+            # Calculate correct answers count
+            correct_answers = 0
+            correct_indices = set()
+            
+            # Handle both single choice and multiple choice questions
+            if isinstance(current_question.get('correct_indices'), list):
+                correct_indices = set(str(idx) for idx in current_question['correct_indices'])
+            elif current_question.get('correct_indices') is not None:
+                correct_indices = {str(current_question['correct_indices'])}
+            
+            for choice_index, participants in answer_statistics.items():
+                if choice_index in correct_indices:
+                    correct_answers += len(participants)
+            
+            # Calculate average response time
+            avg_response_time = LiveSessionService.calculate_average_response_time(
+                session_data, question_uuid
+            )
+            
+            # Get question points
+            question_points = current_question.get('points', 0)
+            
+            # Get total participants count
+            total_participants = len(session_data.get('participants', []))
+            
+            # Create clarity analysis
+            from services.understanding_service import UnderstandingService
+            clarity_analysis = UnderstandingService.get_clarity_analysis(
+                correct_answers, total_responded
+            )
+            
+            # Prepare choice data for bar chart
+            choice_data = []
+            for i, choice_text in enumerate(current_question.get('choices', [])):
+                choice_index = str(i)
+                responses = answer_statistics.get(choice_index, [])
+                is_correct = choice_index in correct_indices
+                
+                choice_data.append({
+                    'index': i,
+                    'text': choice_text,
+                    'count': len(responses),
+                    'percentage': (len(responses) / total_responded * 100) if total_responded > 0 else 0,
+                    'is_correct': is_correct,
+                    'participants': responses
+                })
+            
+            return {
+                'success': True,
+                'question_stats': {
+                    'responded': f"{total_responded}/{total_participants}",
+                    'responded_count': total_responded,
+                    'total_participants': total_participants,
+                    'correct_answers': correct_answers,
+                    'correct_percentage': (correct_answers / total_responded * 100) if total_responded > 0 else 0,
+                    'avg_response_time': avg_response_time,
+                    'question_points': question_points
+                },
+                'clarity_analysis': clarity_analysis,
+                'choice_data': choice_data,
+                'answer_statistics': answer_statistics
+            }
+            
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+    
+    @staticmethod
+    def calculate_average_response_time(
+        session_data: Dict[str, Any], 
+        question_uuid: str
+    ) -> int:
+        """
+        Calculate average response time for a question.
+        
+        Args:
+            session_data: Session data dictionary
+            question_uuid: UUID of the question
+            
+        Returns:
+            Average response time in seconds as rounded integer (0 if no data available)
+        """
+        try:
+            response_times = session_data.get('response_times', {})
+            question_times = response_times.get(question_uuid, [])
+            
+            if not question_times:
+                return 0
+            
+            average = sum(question_times) / len(question_times)
+            return round(average)
+            
+        except Exception:
+            return 0
     
     @staticmethod
     def update_session_status(
