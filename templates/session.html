@@ -2,9 +2,12 @@
 
 {% block content %}
 {% if session_data and session_data.status == 'active' %}
-    {% if current_question and not is_time_expired %}
+    {% if current_question and not is_time_expired and not has_answered %}
     <!-- Active question screen -->
     {% include "session_participant_question.html" %}
+    {% elif current_question and not is_time_expired and has_answered %}
+    <!-- User has already answered - waiting screen -->
+    {% include "session_participant_waiting.html" %}
     {% elif is_time_expired %}
     <!-- Waiting for next question screen -->
     <div id="waiting-next-question" class="h-[60vh] flex items-center justify-center px-4">

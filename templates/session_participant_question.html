@@ -1,6 +1,3 @@
-{% extends "base.html" %}
-
-{% block content %}
 <div class="container mx-auto max-w-4xl px-4 py-8">
     <div class="max-w-4xl mx-auto">
         <!-- Header with Progress Bars -->
@@ -32,7 +29,7 @@
                                 stroke-linecap="round"></circle>
                     </svg>
                     <div class="absolute inset-0 flex items-center justify-center">
-                        <span id="timerText" class="text-lg font-bold">{{ timing_info.time_remaining | round | int if timing_info and timing_info.time_remaining else 0 }}</span>
+                        <span id="timerText" class="text-lg font-bold">{{ "%.0f"|format(timing_info.time_remaining) if timing_info and timing_info.time_remaining > 0 else "0" }}</span>
                     </div>
                 </div>
             </div>
@@ -87,13 +84,10 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
 <script>
 // Timer functionality
 let timerInterval;
-let timeRemaining = parseInt('{{ timing_info.time_remaining|default(0) }}') || 0;
+let timeRemaining = parseFloat('{{ timing_info.time_remaining|default(0) }}') || 0;
 const totalTime = parseInt('{{ current_question.time_limit|default(30) }}') || 30;
 
 function updateTimer() {
@@ -277,4 +271,3 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-{% endblock %}

@@ -13,11 +13,14 @@
                 {% endif %}
             </div>
             <div class="flex gap-3">
-                <button id="showResultsBtn" 
-                    class="inline-flex items-center justify-center rounded-lg text-base font-medium transition-all bg-accent text-accent-foreground shadow-lg hover:shadow-accent/25 px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled>
-                    Show Results
-                </button>
+                <form id="showResultsForm" method="POST" action="{{ url_for('sessions.show_question_results', presentation_id=presentation.id, session_id=session_id) }}" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button id="showResultsBtn" type="submit"
+                        class="inline-flex items-center justify-center rounded-lg text-base font-medium transition-all bg-accent text-accent-foreground shadow-lg hover:shadow-accent/25 px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled>
+                        Show Results
+                    </button>
+                </form>
                 <form id="endSessionForm" method="POST" action="{{ url_for('sessions.end_session', presentation_id=presentation.id, session_id=session_id) }}" class="inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" 
@@ -30,7 +33,7 @@
     </div>
 
     <!-- Progress Bar Section -->
-    <div class="bg-surface/50 border border-border rounded-xl p-6 mb-6">
+    <div class="bg-surface/50 border border-border rounded-xl p-6 mb-6 mt-6">
         <div class="mb-3">
             <h2 class="text-lg font-semibold text-text">
                 <span id="questionProgress">Question {{ current_question_index }} of {{ total_questions }}</span>
@@ -47,7 +50,7 @@
     </div>
 
     <!-- Question Display Section -->
-    <div class="grid gap-6 lg:grid-cols-3">
+    <div class="grid gap-6 lg:grid-cols-3 mt-6">
         <div class="lg:col-span-2">
             <div class="bg-surface/50 border border-border rounded-xl p-6">
                 <div class="flex items-start justify-between mb-6">
@@ -158,6 +161,27 @@
             </div>
         </div>
     </div>
+
+    <!-- Live Responses Section -->
+    <div class="bg-surface/50 border border-border rounded-xl p-6 mb-6 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-text">Live responses</h3>
+            <div id="allAnsweredSuccess" class="hidden items-center text-green-600">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-sm font-medium">All participants have answered</span>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <span id="liveResponsesText" class="text-sm text-muted">Loading responses...</span>
+        </div>
+        
+        <div class="bg-border h-2 rounded-full overflow-hidden">
+            <div id="liveResponsesProgress" class="bg-gradient-to-r from-green-500 to-green-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -174,6 +198,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const showResultsBtn = document.getElementById('showResultsBtn');
     const progressBar = document.getElementById('progressBar');
     const questionProgress = document.getElementById('questionProgress');
+    
+    // Live responses elements
+    const liveResponsesText = document.getElementById('liveResponsesText');
+    const liveResponsesProgress = document.getElementById('liveResponsesProgress');
+    const allAnsweredSuccess = document.getElementById('allAnsweredSuccess');
     
     let timerInterval;
     let timeRemaining = 0;
@@ -224,20 +253,22 @@ document.addEventListener('DOMContentLoaded', function() {
             totalTime = currentQuestion?.time_limit || 30;
             
             if (isTimeExpired) {
-                // Time already expired
+                // Time already expired - enable show results
                 timerCircle.style.strokeDashoffset = '226';
                 timerText.textContent = '0';
                 timerStatus.textContent = 'Question timed out';
                 showResultsBtn.disabled = false;
             } else {
-                // Timer is active
+                // Timer is active - check if all participants have answered
                 startTimer();
+                // We'll let the polling determine if button should be enabled
             }
         } else {
             // No active question or time expired
             timerCircle.style.strokeDashoffset = '226';
             timerText.textContent = '0';
             timerStatus.textContent = isTimeExpired ? 'Question timed out' : 'No active question';
+            // Enable button if time expired, disable otherwise
             showResultsBtn.disabled = !isTimeExpired;
         }
     }
@@ -273,14 +304,79 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1000);
     }
     
-    // Show results button handler
-    showResultsBtn.addEventListener('click', function() {
-        // Reload page to show results (backend will handle template selection)
-        window.location.reload();
-    });
+    // Update live responses display
+    function updateLiveResponses(answeredCount, totalCount, allAnswered) {
+        // Update text
+        liveResponsesText.textContent = `Live responses: ${answeredCount}/${totalCount}`;
+        
+        // Update progress bar
+        const percentage = totalCount > 0 ? (answeredCount / totalCount) * 100 : 0;
+        liveResponsesProgress.style.width = percentage + '%';
+        
+        // Show/hide success icon
+        if (allAnswered) {
+            allAnsweredSuccess.classList.remove('hidden');
+            allAnsweredSuccess.classList.add('flex');
+        } else {
+            allAnsweredSuccess.classList.add('hidden');
+            allAnsweredSuccess.classList.remove('flex');
+        }
+        
+        // Enable show results button if all answered
+        if (allAnswered) {
+            showResultsBtn.disabled = false;
+        }
+    }
+    
+    // Poll live responses
+    function pollLiveResponses() {
+        if (!sessionData.current_question_uuid) {
+            // No active question, hide live responses
+            liveResponsesText.textContent = 'No active question';
+            liveResponsesProgress.style.width = '0%';
+            allAnsweredSuccess.classList.add('hidden');
+            return;
+        }
+        
+        fetch(`/api/presentations/${presentationId}/live_session/${sessionId}/responses-count`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                question_uuid: sessionData.current_question_uuid
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateLiveResponses(
+                    data.answered_count,
+                    data.participants_count,
+                    data.all_answered
+                );
+            } else {
+                console.error('Error in live responses:', data.error);
+                liveResponsesText.textContent = 'Error loading responses';
+            }
+        })
+        .catch(error => {
+            console.error('Error polling live responses:', error);
+            liveResponsesText.textContent = 'Error loading responses';
+        });
+    }
+    
+    // Show results button is now handled by form submission
     
     // Initialize on load - progress is already set by template
     initTimer();
+    
+    // Initial call to load live responses
+    pollLiveResponses();
+    
+    // Poll live responses every 3 seconds
+    setInterval(pollLiveResponses, 3000);
     
     // Refresh timer every 10 seconds to sync with server
     setInterval(() => {
