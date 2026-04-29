@@ -122,11 +122,20 @@ function handleTimeExpired() {
     submitBtn.textContent = 'Time Expired';
     submitBtn.disabled = true;
     
-    // Optionally auto-submit if there are selections
+    // Check if there are any selections to auto-submit
     const selectedInputs = document.querySelectorAll('input[name="choices"]:checked');
     if (selectedInputs.length > 0) {
-        // Auto-submit the answer
+        // Auto-submit the answer if participant made selections
         submitAnswer();
+    } else {
+        // No answer provided - start polling for next question
+        clearInterval(timerInterval);
+        pollForNextQuestion();
+        
+        // Show timeout message and reload after a short delay to trigger waiting screen
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
     }
 }
 
@@ -208,9 +217,12 @@ function pollForNextQuestion() {
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.has_new_question) {
-                // Reload page for next question
-                window.location.reload();
+            if (data.success) {
+                // Check for state changes that require page reload
+                if (data.has_new_question || data.is_time_expired) {
+                    // Reload page to show appropriate state (next question or waiting screen)
+                    window.location.reload();
+                }
             }
         })
         .catch(error => {
@@ -218,8 +230,8 @@ function pollForNextQuestion() {
         });
     }, 2000);
     
-    // Clear polling after 30 seconds to prevent infinite polling
-    setTimeout(() => clearInterval(pollInterval), 30000);
+    // Clear polling after 60 seconds to prevent infinite polling
+    setTimeout(() => clearInterval(pollInterval), 60000);
 }
 
 // Show notification helper
