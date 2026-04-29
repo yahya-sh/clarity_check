@@ -4,9 +4,10 @@ routes/objectives.py — Objective management routes.
 Handles objective CRUD operations within presentations.
 Extracted from instructor.py for better separation of concerns.
 """
-from flask import Blueprint, render_template, flash, redirect, g, url_for, request
+from flask import Blueprint, render_template, flash, redirect, g, url_for, request, jsonify
 from app import require_instructor
 from services.presentation_service import PresentationService
+from repositories import presentations_repo
 from repositories.base import NotFoundError, ValidationError
 from config.constants import FLASH_SUCCESS, FLASH_ERROR
 
@@ -20,11 +21,9 @@ def _load_presentation_or_abort(username: str, presentation_id: str, *, json_res
     On failure returns an appropriate Flask response.
     """
     try:
-        from repositories import presentations_repo
         return presentations_repo.load_presentation(username, presentation_id)
     except (FileNotFoundError, KeyError, ValueError):
         if json_response:
-            from flask import jsonify
             return jsonify({'error': 'Presentation not found.'}), 404
         flash('Presentation not found.', FLASH_ERROR)
         return redirect(url_for('dashboard.dashboard'))

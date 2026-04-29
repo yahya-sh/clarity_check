@@ -10,6 +10,7 @@ from forms.join import JoinForm
 from app import require_participant
 from services.pin_service_extended import PinServiceExtended
 from services.participant_service import ParticipantService
+from services.live_session_service import LiveSessionService
 from utils.form_utils import FormUtils
 from config.constants import FLASH_ERROR
 
@@ -80,7 +81,7 @@ def participant_session(session_uuid):
     current_objective = None
     
     try:
-        from services.live_session_service import LiveSessionService
+        # Get timing information for active sessions
         timing_info = LiveSessionService.get_session_timing(
             g.participant.presentation_instructor_username,
             g.participant.presentation_uuid,
@@ -108,17 +109,28 @@ def participant_session(session_uuid):
                 current_objective = objectives.get(current_question['parent_objective_id'])
             
     except Exception:
-        # If timing service fails, continue without timing info
+        # If timing service fails, continue
         pass
     
-    # Calculate question progress
-    current_question_index = 0
-    total_questions = 0
-    if session_data.get('shuffled_question_uuids'):
-        total_questions = len(session_data['shuffled_question_uuids'])
-        current_uuid = timing_info.get('current_question_uuid') if timing_info else None
-        if current_uuid and current_uuid in session_data['shuffled_question_uuids']:
-            current_question_index = session_data['shuffled_question_uuids'].index(current_uuid) + 1
+    # Calculate question progress using service function
+    current_question_index, total_questions = LiveSessionService.get_current_question_index(
+        g.participant.presentation_instructor_username,
+        g.participant.presentation_uuid,
+        g.participant.session_uuid
+    )
+    # Convert to 1-based index for display
+    current_question_index_display = current_question_index + 1 if total_questions > 0 else 0
+    
+    # Check if user has already answered the current question
+    has_answered = False
+    if current_question and current_question.get('question_id'):
+        has_answered = LiveSessionService.has_user_answered_question(
+            username=g.participant.presentation_instructor_username,
+            presentation_uuid=g.participant.presentation_uuid,
+            session_uuid=g.participant.session_uuid,
+            user_uuid=g.participant.uuid,
+            question_uuid=current_question['question_id']
+        )
     
     return render_template('session.html', 
                          session_data=session_data,
@@ -126,5 +138,6 @@ def participant_session(session_uuid):
                          current_question=current_question,
                          current_objective=current_objective,
                          is_time_expired=is_time_expired,
-                         current_question_index=current_question_index,
-                         total_questions=total_questions)
+                         current_question_index=current_question_index_display,
+                         total_questions=total_questions,
+                         has_answered=has_answered)
