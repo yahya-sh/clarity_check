@@ -553,6 +553,281 @@ class SessionService:
         return session_data
     
     @staticmethod
+    def set_status(username: str, presentation_uuid: str, session_uuid: str, status: str) -> Dict[str, Any]:
+        """
+        Set the status of a session.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            status: New status value to set
+            
+        Returns:
+            Updated session data dictionary
+            
+        Raises:
+            NotFoundError: If session not found
+            ValidationError: If status update fails
+        """
+        # Get current session data
+        session_data = SessionService.get_session(username, presentation_uuid, session_uuid)
+        
+        # Update session status
+        session_data['status'] = status
+        
+        # Add timestamp for status change
+        session_data[f'{status}_at'] = datetime.now().isoformat()
+        
+        # Save updated session data
+        session_file_path = f"/Users/ysh/Remotecoders/Final_Project/Project/data/instructors/{username}/sessions/{presentation_uuid}/{session_uuid}.json"
+        from utils.file_utils import write_json_file
+        write_json_file(session_file_path, session_data)
+        
+        return session_data
+    
+    @staticmethod
+    def calculate_participants_points(username: str, presentation_uuid: str, session_uuid: str) -> Dict[str, Any]:
+        """
+        Calculate points for each participant based on their answers.
+        
+        Analyzes all questions in answers_statistics and calculates points for each participant
+        based on correct and incorrect answers. Handles both single_choice and multiple_choice
+        question types with appropriate scoring logic.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            
+        Returns:
+            Updated session data dictionary with users_points map
+            
+        Raises:
+            NotFoundError: If session not found
+            ValidationError: If required data is missing
+        """
+        # Get current session data
+        session_data = SessionService.get_session(username, presentation_uuid, session_uuid)
+        
+        # Initialize users_points map
+        users_points = {}
+        
+        # Get answers_statistics and questions from session data
+        answers_statistics = session_data.get('answers_statistics', {})
+        questions = session_data.get('questions', {})
+        
+        # Loop across all questions in answers_statistics
+        for question_uuid, question_stats in answers_statistics.items():
+            # Get question data
+            question = questions.get(question_uuid)
+            if not question:
+                continue  # Skip if question data not found
+            
+            # Get question properties
+            question_type = question.get('type')
+            question_points = question.get('points', 0)
+            correct_indices = question.get('correct_indices', [])
+            
+            # Skip if no correct indices or no points
+            if not correct_indices or question_points <= 0:
+                continue
+            
+            # Convert correct_indices to set for easier lookup
+            correct_indices_set = set(correct_indices)
+            correct_choices_length = len(correct_indices_set)
+            
+            # Loop for each choice in this question's statistics
+            for choice_index_str, participant_uuids in question_stats.items():
+                try:
+                    choice_index = int(choice_index_str)
+                except ValueError:
+                    continue  # Skip invalid choice indices
+                
+                # Determine if this choice is correct
+                is_correct = choice_index in correct_indices_set
+                
+                # Calculate points for this choice
+                if question_type == "single_choice":
+                    # For single choice, only correct choice gets full points
+                    choice_points = question_points if is_correct else 0
+                elif question_type == "multiple_choice":
+                    # For multiple choice, divide points among correct choices
+                    # and subtract for wrong choices
+                    choice_points = question_points / correct_choices_length
+                    if not is_correct:
+                        choice_points = -choice_points  # Negative points for wrong choice
+                else:
+                    continue  # Skip unsupported question types
+                
+                # Loop for each participant uuid who selected this choice
+                for participant_uuid in participant_uuids:
+                    # Initialize participant points if not exists
+                    if participant_uuid not in users_points:
+                        users_points[participant_uuid] = 0
+                    
+                    # Add/increment the points for this participant
+                    users_points[participant_uuid] += choice_points
+        
+        # Store the users_points map in the session data
+        session_data['users_points'] = users_points
+        
+        # Save updated session data
+        session_file_path = f"/Users/ysh/Remotecoders/Final_Project/Project/data/instructors/{username}/sessions/{presentation_uuid}/{session_uuid}.json"
+        from utils.file_utils import write_json_file
+        write_json_file(session_file_path, session_data)
+        
+        return session_data
+    
+    @staticmethod
+    def calculate_participant_performance(username: str, presentation_uuid: str, session_uuid: str) -> List[Dict[str, Any]]:
+        """
+        Calculate performance metrics for each participant in a session.
+        
+        Analyzes participant answers from users_answers data and calculates
+        correct answers count, total answered, and score percentage for each participant.
+        Handles both single_choice and multiple_choice question types.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            
+        Returns:
+            List of participant performance dictionaries sorted by score_percentage (highest first)
+            Each dictionary contains: uuid, nickname, correct_count, total_answered, score_percentage
+            
+        Raises:
+            NotFoundError: If session not found
+            ValidationError: If required data is missing
+        """
+        # Get current session data
+        session_data = SessionService.get_session(username, presentation_uuid, session_uuid)
+        
+        # Get participants, questions, and user answers from session data
+        participants = session_data.get('participants', [])
+        questions = session_data.get('questions', {})
+        users_answers = session_data.get('users_answers', {})
+        
+        # Calculate participant performance
+        participant_results = []
+        for participant in participants:
+            participant_uuid = participant.get('uuid')
+            nickname = participant.get('nickname', 'Anonymous')
+            
+            # Get participant's answers from users_answers
+            participant_answers = users_answers.get(participant_uuid, {})
+            
+            # Calculate correct answers count
+            correct_count = 0
+            total_answered = 0
+            
+            for question_uuid, answer_data in participant_answers.items():
+                if question_uuid in questions:
+                    question = questions[question_uuid]
+                    correct_indices = question.get('correct_indices', [])
+                    user_answer = answer_data
+                    
+                    total_answered += 1
+                    
+                    # Handle both single answer (int) and multiple answers (list)
+                    if isinstance(user_answer, list):
+                        # Multiple choice: check if all selected indices are correct
+                        correct_indices_set = set(correct_indices)
+                        user_answer_set = set(user_answer)
+                        if user_answer_set == correct_indices_set:
+                            correct_count += 1
+                    else:
+                        # Single choice: check if answer matches correct index
+                        if user_answer in correct_indices:
+                            correct_count += 1
+            
+            score_percentage = (correct_count / total_answered * 100) if total_answered > 0 else 0
+            
+            participant_results.append({
+                'uuid': participant_uuid,
+                'nickname': nickname,
+                'correct_count': correct_count,
+                'total_answered': total_answered,
+                'score_percentage': round(score_percentage, 1)
+            })
+        
+        # Sort participants by score (highest first)
+        participant_results.sort(key=lambda x: x['score_percentage'], reverse=True)
+        
+        return participant_results
+    
+    @staticmethod
+    def calculate_objectives_performance(username: str, presentation_uuid: str, session_uuid: str, question_stats: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Calculate performance metrics for each objective based on question performance.
+        
+        Aggregates question performance by parent_objective_id and calculates
+        average performance for each objective.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            question_stats: List of question performance statistics from calculate_question_statistics
+            
+        Returns:
+            List of objective performance dictionaries sorted by objective order
+            Each dictionary contains: uuid, objective_text, total_questions, avg_performance
+            
+        Raises:
+            NotFoundError: If session not found
+            ValidationError: If required data is missing
+        """
+        # Get current session data
+        session_data = SessionService.get_session(username, presentation_uuid, session_uuid)
+        
+        # Get objectives and questions from session data
+        objectives = session_data.get('objectives', {})
+        questions = session_data.get('questions', {})
+        
+        # Create a mapping of objective_id to list of question performances
+        objective_question_map = {}
+        
+        # Group question statistics by parent_objective_id
+        for question_stat in question_stats:
+            question_uuid = question_stat.get('uuid')
+            if question_uuid in questions:
+                question = questions[question_uuid]
+                parent_objective_id = question.get('parent_objective_id')
+                
+                if parent_objective_id:
+                    if parent_objective_id not in objective_question_map:
+                        objective_question_map[parent_objective_id] = []
+                    objective_question_map[parent_objective_id].append(question_stat)
+        
+        # Calculate objective performance
+        objective_results = []
+        for objective_id, objective_questions in objective_question_map.items():
+            # Get objective data
+            objective = objectives.get(objective_id, {})
+            objective_text = objective.get('text', 'Unknown Objective')
+            objective_order = objective.get('order', 999)
+            
+            # Calculate average performance
+            total_questions = len(objective_questions)
+            total_performance = sum(q.get('correct_percentage', 0) for q in objective_questions)
+            avg_performance = total_performance / total_questions if total_questions > 0 else 0
+            
+            objective_results.append({
+                'uuid': objective_id,
+                'objective_text': objective_text,
+                'order': objective_order,
+                'total_questions': total_questions,
+                'avg_performance': round(avg_performance, 1)
+            })
+        
+        # Sort by objective order
+        objective_results.sort(key=lambda x: x['order'])
+        
+        return objective_results
+    
+    @staticmethod
     def end_session(username: str, presentation_uuid: str, session_uuid: str) -> Dict[str, Any]:
         """
         End a session by updating its status to completed.
