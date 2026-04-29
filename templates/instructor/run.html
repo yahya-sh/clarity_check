@@ -1,63 +1,6 @@
 {% extends "base.html" %}
 
 {% block content %}
-<style>
-    @keyframes pulse-scale {
-
-        0%,
-        100% {
-            transform: scale(1);
-        }
-
-        50% {
-            transform: scale(1.05);
-        }
-    }
-
-    @keyframes fade-in {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .animate-pulse-scale {
-        animation: pulse-scale 2s ease-in-out infinite;
-    }
-
-    .animate-pulse-scale:hover {
-        animation-play-state: paused;
-    }
-
-    .cursor-pointer {
-        cursor: pointer;
-    }
-
-    .animate-fade-in {
-        animation: fade-in 1s ease-out;
-    }
-
-    .description-truncated {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .description-expanded {
-        display: block;
-    }
-
-    .toggle-icon-rotated {
-        transform: rotate(180deg);
-    }
-</style>
 
 <input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
 
@@ -88,8 +31,7 @@
                     <h1 class="text-4xl font-bold text-text mb-3 tracking-tight">{{ presentation.title }}</h1>
                     {% if presentation.description %}
                     <div class="description-container">
-                        <p id="descriptionText" class="text-lg text-muted leading-relaxed">{{ presentation.description
-                            }}</p>
+                        <p id="descriptionText" class="text-lg text-muted leading-relaxed{% if presentation.description|length > 150 %} line-clamp-2{% endif %}">{{ presentation.description }}</p>
                         {% if presentation.description|length > 150 %}
                         <button id="descriptionToggle"
                             class="text-sm text-accent hover:text-accent/80 font-medium mt-2 cursor-pointer transition-colors">
@@ -157,7 +99,7 @@
                         <form method="POST" action="{{ url_for('sessions.start_session', presentation_id=presentation.id) }}" class="w-full">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" id="startSessionBtn"
-                                class="inline-flex items-center justify-center rounded-lg text-base font-medium transition-all hover:scale-105 bg-primary text-primary-foreground shadow-lg hover:shadow-primary/25 px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed w-full animate-pulse-scale cursor-pointer">
+                                class="inline-flex items-center justify-center rounded-lg text-base font-medium transition-all hover:scale-105 bg-primary text-primary-foreground shadow-lg hover:shadow-primary/25 px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed w-full animate-pulse cursor-pointer">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                     stroke-linejoin="round" class="mr-2">
@@ -166,7 +108,7 @@
                                 Start Session
                             </button>
                         </form>
-                        <div class="text-xs text-muted text-center mt-2 animate-fade-in">
+                        <div class="text-xs text-muted text-center mt-2 animate-pulse">
                             First question will start immediately
                         </div>
                     </div>
@@ -418,7 +360,7 @@
             if (descriptionText && descriptionToggle) {
                 const textLength = descriptionText.textContent.length;
                 if (textLength > 150) {
-                    descriptionText.classList.add('description-truncated');
+                    descriptionText.classList.add('line-clamp-2');
                     isDescriptionExpanded = false;
                 } else {
                     // Hide toggle button for short descriptions
@@ -432,15 +374,15 @@
             if (!descriptionText || !descriptionToggle) return;
 
             if (isDescriptionExpanded) {
-                descriptionText.classList.remove('description-expanded');
-                descriptionText.classList.add('description-truncated');
+                descriptionText.classList.remove('block');
+                descriptionText.classList.add('line-clamp-2');
                 toggleText.textContent = 'Show more';
-                toggleIcon.classList.remove('toggle-icon-rotated');
+                toggleIcon.classList.remove('rotate-180');
             } else {
-                descriptionText.classList.remove('description-truncated');
-                descriptionText.classList.add('description-expanded');
+                descriptionText.classList.remove('line-clamp-2');
+                descriptionText.classList.add('block');
                 toggleText.textContent = 'Show less';
-                toggleIcon.classList.add('toggle-icon-rotated');
+                toggleIcon.classList.add('rotate-180');
             }
 
             isDescriptionExpanded = !isDescriptionExpanded;
@@ -610,7 +552,7 @@
                     contentArea.outerHTML = `
                     <div class="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                         ${participants.map(participant => `
-                            <div class="bg-background border border-border rounded-lg p-3 flex items-center gap-2 animate-fade-in">
+                            <div class="bg-background border border-border rounded-lg p-3 flex items-center gap-2 animate-pulse">
                                 <div class="w-8 h-8 bg-accent/20 text-accent rounded-full flex items-center justify-center text-sm font-medium">
                                     ${participant.nickname[0].toUpperCase()}
                                 </div>
