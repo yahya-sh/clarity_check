@@ -669,6 +669,10 @@ class SessionService:
                     # Add/increment the points for this participant
                     users_points[participant_uuid] += choice_points
         
+        # Round all participant points to integers
+        for participant_uuid in users_points:
+            users_points[participant_uuid] = round(users_points[participant_uuid])
+        
         # Store the users_points map in the session data
         session_data['users_points'] = users_points
         
