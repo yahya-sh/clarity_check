@@ -26,7 +26,7 @@ def join_session():
         is_valid, error_message, presentation_obj = PinServiceExtended.validate_pin(pin)
         
         if not is_valid:
-            flash(error_message or 'Presentation not found with this PIN.', FLASH_ERROR)
+            flash(error_message or 'Session not found with this PIN.', FLASH_ERROR)
             return redirect(url_for('public.index'))
         
         presentation = presentation_obj
@@ -73,4 +73,58 @@ def participant_session(session_uuid):
         flash(error_message or "Session not found", FLASH_ERROR)
         return redirect(url_for('participant.join_session'))
     
-    return render_template('session.html', session_data=session_data)
+    # Get timing information for active sessions
+    timing_info = None
+    current_question = None
+    is_time_expired = False
+    current_objective = None
+    
+    try:
+        from services.live_session_service import LiveSessionService
+        timing_info = LiveSessionService.get_session_timing(
+            g.participant.presentation_instructor_username,
+            g.participant.presentation_uuid,
+            g.participant.session_uuid
+        )
+        
+        # Check if timing has expired
+        is_time_expired = LiveSessionService.is_question_time_expired(
+            g.participant.presentation_instructor_username,
+            g.participant.presentation_uuid,
+            g.participant.session_uuid
+        )
+        
+        # Get current question data if available
+        if timing_info.get('current_question_uuid'):
+            current_question = LiveSessionService.get_current_question(
+                g.participant.presentation_instructor_username,
+                g.participant.presentation_uuid,
+                g.participant.session_uuid
+            )
+            
+            # Extract objective information from session data
+            if current_question and current_question.get('parent_objective_id'):
+                objectives = session_data.get('objectives', {})
+                current_objective = objectives.get(current_question['parent_objective_id'])
+            
+    except Exception:
+        # If timing service fails, continue without timing info
+        pass
+    
+    # Calculate question progress
+    current_question_index = 0
+    total_questions = 0
+    if session_data.get('shuffled_question_uuids'):
+        total_questions = len(session_data['shuffled_question_uuids'])
+        current_uuid = timing_info.get('current_question_uuid') if timing_info else None
+        if current_uuid and current_uuid in session_data['shuffled_question_uuids']:
+            current_question_index = session_data['shuffled_question_uuids'].index(current_uuid) + 1
+    
+    return render_template('session.html', 
+                         session_data=session_data,
+                         timing_info=timing_info,
+                         current_question=current_question,
+                         current_objective=current_objective,
+                         is_time_expired=is_time_expired,
+                         current_question_index=current_question_index,
+                         total_questions=total_questions)
