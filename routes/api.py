@@ -6,6 +6,7 @@ providing a clear boundary for API functionality and future
 API versioning support.
 """
 from flask import Blueprint, g, jsonify, request
+from datetime import datetime
 from app import require_participant, require_instructor
 from services.pin_service_extended import PinServiceExtended
 from services.participant_service import ParticipantService
@@ -63,6 +64,13 @@ def submit_answer():
         if has_answered:
             return ResponseUtils.error_response("You already answered this question", 402)
         
+        # Calculate response time using service method
+        response_time = LiveSessionService.calculate_participant_response_time(
+            username=g.participant.presentation_instructor_username,
+            presentation_uuid=g.participant.presentation_uuid,
+            session_uuid=g.participant.session_uuid
+        )
+        
         # Save the answer to the session JSON file
         success = LiveSessionService.set_user_answer(
             username=g.participant.presentation_instructor_username,
@@ -70,7 +78,8 @@ def submit_answer():
             session_uuid=g.participant.session_uuid,
             user_uuid=g.participant.uuid,
             question_uuid=question_uuid,
-            answer_indices=answer_indices
+            answer_indices=answer_indices,
+            response_time=response_time
         )
         
         if not success:
@@ -79,7 +88,8 @@ def submit_answer():
         return ResponseUtils.success_response({
             'message': 'Answer submitted successfully',
             'choices': answer_indices,
-            'question_uuid': question_uuid
+            'question_uuid': question_uuid,
+            'response_time': response_time
         })
         
     except Exception as e:
