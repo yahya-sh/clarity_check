@@ -9,13 +9,14 @@ from flask import Blueprint, render_template, flash, redirect, g, url_for, reque
 from flask_wtf.csrf import CSRFError
 from app import require_instructor
 from repositories import runs_repo, presentations_repo
+from repositories.base import ValidationError
 from services import qr_service
 from services.pin_service import get_or_renew_pin, refresh_pin as service_refresh_pin
 from services.qr_service import generate_qr_code
 from services.session_service import SessionService
 from services.live_session_service import LiveSessionService
 from utils.response_utils import ResponseUtils
-from config.constants import FLASH_SUCCESS, FLASH_ERROR, SESSION_PENDING, SESSION_ACTIVE
+from config.constants import FLASH_SUCCESS, FLASH_ERROR, SESSION_PENDING, SESSION_ACTIVE, SESSION_DONE
 from models.presentation import Presentation
 from routes._helpers import _load_presentation_or_abort
 
@@ -399,6 +400,29 @@ def next_question(presentation_id, session_id):
         # Redirect back to the live session page
         return redirect(url_for('sessions.live_session', presentation_id=presentation_id, session_id=session_id))
         
+    except ValidationError as e:
+        # Check if this is the "no more questions" error
+        if "No more questions available" in str(e):
+            # Change session status to done
+            try:
+                SessionService.set_status(username, presentation_id, session_id, SESSION_DONE)
+                # Calculate participants points after session is done
+                try:
+                    SessionService.calculate_participants_points(username, presentation_id, session_id)
+                except Exception as points_error:
+                    # Log error but don't fail the session completion
+                    print(f"Warning: Failed to calculate participants points: {str(points_error)}")
+                flash('Session completed! All questions have been answered.', FLASH_SUCCESS)
+                # Redirect to the result page
+                return redirect(url_for('sessions.session_result', presentation_id=presentation_id, session_id=session_id))
+            except Exception as status_error:
+                flash(f'Session completed but failed to update status: {str(status_error)}', FLASH_WARNING)
+                return redirect(url_for('sessions.session_result', presentation_id=presentation_id, session_id=session_id))
+        else:
+            # Handle other ValidationError cases
+            flash(f'Validation error: {str(e)}', FLASH_ERROR)
+            return redirect(url_for('sessions.live_session', presentation_id=presentation_id, session_id=session_id))
+        
     except Exception as e:
         flash(f'Failed to move to next question: {str(e)}', FLASH_ERROR)
         return redirect(url_for('sessions.live_session', presentation_id=presentation_id, session_id=session_id))
@@ -419,3 +443,95 @@ def get_session_timing(presentation_id, session_id):
         return jsonify(timing_info)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@routes.route('/presentations/<presentation_id>/sessions/<session_id>/result')
+@require_instructor
+def session_result(presentation_id, session_id):
+    """
+    Display the final results for a completed session.
+    
+    Shows comprehensive session statistics, participant performance,
+    and overall results for the completed session.
+    """
+    username = g.user.username
+    result = _load_presentation_or_abort(username, presentation_id)
+    if not isinstance(result, Presentation):
+        return result
+    presentation = result
+
+    try:
+        # Load session data
+        session_data = SessionService.get_session(username, presentation_id, session_id)
+        
+        # Get session statistics
+        session_stats = SessionService.get_session_statistics(username, presentation_id, session_id)
+        
+        # Calculate comprehensive results
+        participants = session_data.get('participants', [])
+        questions = session_data.get('questions', {})
+        objectives = session_data.get('objectives', {})
+        
+        # Calculate participant performance using service function
+        participant_results = SessionService.calculate_participant_performance(username, presentation_id, session_id)
+        
+        # Calculate question statistics
+        question_stats = []
+        users_answers = session_data.get('users_answers', {})
+        
+        for question_uuid, question in questions.items():
+            # Get all answers for this question
+            total_answers = 0
+            correct_answers = 0
+            correct_indices = set(question.get('correct_indices', []))
+            
+            for participant_uuid, participant_answers in users_answers.items():
+                if question_uuid in participant_answers:
+                    total_answers += 1
+                    user_answer = participant_answers[question_uuid]
+                    
+                    # Handle both single answer (int) and multiple answers (list)
+                    if isinstance(user_answer, list):
+                        # Multiple choice: check if all selected indices are correct
+                        user_answer_set = set(user_answer)
+                        if user_answer_set == correct_indices:
+                            correct_answers += 1
+                    else:
+                        # Single choice: check if answer matches correct index
+                        if user_answer in correct_indices:
+                            correct_answers += 1
+            
+            correct_percentage = (correct_answers / total_answers * 100) if total_answers > 0 else 0
+            
+            question_stats.append({
+                'uuid': question_uuid,
+                'question_text': question.get('text', 'Unknown Question'),
+                'total_answers': total_answers,
+                'correct_answers': correct_answers,
+                'correct_percentage': round(correct_percentage, 1)
+            })
+        
+        # Calculate objective performance using service function
+        objective_stats = SessionService.calculate_objectives_performance(username, presentation_id, session_id, question_stats)
+        
+        # Calculate overall session statistics
+        total_participants = len(participants)
+        total_questions = len(questions)
+        avg_score = sum(p['score_percentage'] for p in participant_results) / total_participants if total_participants > 0 else 0
+        
+        return render_template(
+            'instructor/session_instructor_result.html',
+            presentation=presentation,
+            session_data=session_data,
+            session_stats=session_stats,
+            participant_results=participant_results,
+            question_stats=question_stats,
+            objective_stats=objective_stats,
+            total_participants=total_participants,
+            total_questions=total_questions,
+            avg_score=round(avg_score, 1),
+            session_id=session_id
+        )
+        
+    except Exception as e:
+        flash(f'Failed to load session results: {str(e)}', FLASH_ERROR)
+        return redirect(url_for('presentations.presentation_page', presentation_id=presentation_id))
