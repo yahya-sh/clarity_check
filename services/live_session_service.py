@@ -207,3 +207,348 @@ class LiveSessionService:
         
         time_remaining = timing_info.get('time_remaining')
         return time_remaining is not None and time_remaining <= 0
+    
+    @staticmethod
+    def get_current_question_index(
+        username: str,
+        presentation_uuid: str,
+        session_uuid: str
+    ) -> tuple[int, int]:
+        """
+        Get the current question index and total questions from session data.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            
+        Returns:
+            Tuple of (current_question_index, total_questions)
+            current_question_index is 0-based, total_questions is the count
+        """
+        session_data = load_session(username, presentation_uuid, session_uuid)
+        if not session_data:
+            return 0, 0
+        
+        shuffled_question_uuids = session_data.get('shuffled_question_uuids', [])
+        total_questions = len(shuffled_question_uuids)
+        
+        if total_questions == 0:
+            return 0, 0
+        
+        current_question_uuid = session_data.get('current_question_uuid')
+        if not current_question_uuid or current_question_uuid not in shuffled_question_uuids:
+            return 0, total_questions
+        
+        current_question_index = shuffled_question_uuids.index(current_question_uuid)
+        return current_question_index, total_questions
+    
+    @staticmethod
+    def has_user_answered_question(
+        username: str,
+        presentation_uuid: str,
+        session_uuid: str,
+        user_uuid: str,
+        question_uuid: str
+    ) -> bool:
+        """
+        Check if a user has answered a specific question.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            user_uuid: UUID of the user
+            question_uuid: UUID of the question
+            
+        Returns:
+            True if user has answered the question, False otherwise
+        """
+        session_data = load_session(username, presentation_uuid, session_uuid)
+        if not session_data:
+            return False
+        
+        users_answers = session_data.get('users_answers', {})
+        user_answers = users_answers.get(user_uuid, {})
+        return question_uuid in user_answers
+    
+    @staticmethod
+    def set_user_answer(
+        username: str,
+        presentation_uuid: str,
+        session_uuid: str,
+        user_uuid: str,
+        question_uuid: str,
+        answer_indices: List[int]
+    ) -> bool:
+        """
+        Set or update a user's answer for a specific question in the session.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            user_uuid: UUID of the user
+            question_uuid: UUID of the question
+            answer_indices: List of selected answer indices
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        session_data = load_session(username, presentation_uuid, session_uuid)
+        if not session_data:
+            return False
+        
+        # Initialize users_answers if it doesn't exist
+        if 'users_answers' not in session_data:
+            session_data['users_answers'] = {}
+        
+        # Initialize user entry if it doesn't exist
+        if user_uuid not in session_data['users_answers']:
+            session_data['users_answers'][user_uuid] = {}
+        
+        # Update the user's answer for this question
+        session_data['users_answers'][user_uuid][question_uuid] = answer_indices
+        
+        # Initialize answers_count if it doesn't exist
+        if 'answers_count' not in session_data:
+            session_data['answers_count'] = {}
+        
+        # Initialize question_uuid entry in answers_count if it doesn't exist
+        if question_uuid not in session_data['answers_count']:
+            session_data['answers_count'][question_uuid] = 0
+        
+        # Increment answer count for the question by 1
+        session_data['answers_count'][question_uuid] += 1
+        
+        # Save updated session data
+        session_file_path = get_session_file_path(username, presentation_uuid, session_uuid)
+        write_json_file(session_file_path, session_data)
+        return True
+    
+    @staticmethod
+    def get_answered_participants_count(
+        username: str,
+        presentation_uuid: str,
+        session_uuid: str,
+        question_uuid: str
+    ) -> tuple[int, int]:
+        """
+        Get the count of participants who have answered a specific question.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            question_uuid: UUID of the question
+            
+        Returns:
+            Tuple of (answered_count, total_participants_count)
+            
+        Raises:
+            NotFoundError: If session not found
+        """
+        session_data = load_session(username, presentation_uuid, session_uuid)
+        if not session_data:
+            raise NotFoundError("Session not found")
+        
+        # Get total participants count
+        participants = session_data.get('participants', [])
+        total_participants_count = len(participants)
+        
+        # Get answered count from answers_count
+        answers_count = session_data.get('answers_count', {})
+        answered_count = answers_count.get(question_uuid, 0)
+        
+        return answered_count, total_participants_count
+    
+    @staticmethod
+    def calculate_answer_statistics(
+        username: str,
+        presentation_uuid: str,
+        session_uuid: str,
+        question_uuid: str
+    ) -> Dict[str, List[str]]:
+        """
+        Calculate answer statistics for a specific question.
+        
+        Groups users by their answer choices and returns a dictionary
+        with choice indices as keys and lists of user UUIDs as values.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            question_uuid: UUID of the question
+            
+        Returns:
+            Dictionary with choice indices as keys and lists of user UUIDs as values
+            Example: {"0": ["user1", "user3"], "1": ["user2"]}
+            
+        Raises:
+            NotFoundError: If session not found
+        """
+        session_data = load_session(username, presentation_uuid, session_uuid)
+        if not session_data:
+            raise NotFoundError("Session not found")
+        
+        # Initialize statistics dictionary
+        statistics = {}
+        
+        # Get all user answers for this question
+        users_answers = session_data.get('users_answers', {})
+        
+        # Group users by their answer choices
+        for user_uuid, user_answers in users_answers.items():
+            if question_uuid in user_answers:
+                answer_indices = user_answers[question_uuid]
+                # Handle both single answer (int) and multiple answers (list)
+                if isinstance(answer_indices, list):
+                    for answer_index in answer_indices:
+                        choice_key = str(answer_index)
+                        if choice_key not in statistics:
+                            statistics[choice_key] = []
+                        statistics[choice_key].append(user_uuid)
+                else:
+                    choice_key = str(answer_indices)
+                    if choice_key not in statistics:
+                        statistics[choice_key] = []
+                    statistics[choice_key].append(user_uuid)
+        
+        return statistics
+    
+    @staticmethod
+    def store_answer_statistics(
+        username: str,
+        presentation_uuid: str,
+        session_uuid: str,
+        question_uuid: str,
+        statistics: Dict[str, List[str]]
+    ) -> bool:
+        """
+        Store answer statistics for a specific question in the session data.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            question_uuid: UUID of the question
+            statistics: Answer statistics dictionary
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        session_data = load_session(username, presentation_uuid, session_uuid)
+        if not session_data:
+            return False
+        
+        # Initialize answers_statistics if it doesn't exist
+        if 'answers_statistics' not in session_data:
+            session_data['answers_statistics'] = {}
+        
+        # Store statistics for this question
+        session_data['answers_statistics'][question_uuid] = statistics
+        
+        # Save updated session data
+        session_file_path = get_session_file_path(username, presentation_uuid, session_uuid)
+        write_json_file(session_file_path, session_data)
+        return True
+    
+    @staticmethod
+    def calculate_statistics(
+        username: str,
+        presentation_uuid: str,
+        session_uuid: str,
+        question_uuid: str
+    ) -> Dict[str, Any]:
+        """
+        Calculate and store answer statistics for a specific question.
+        
+        Combines statistics calculation, storage, and participants map creation
+        into a single method for better code organization.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            question_uuid: UUID of the question
+            
+        Returns:
+            Dictionary containing statistics, participants map, and current question data
+            {
+                'statistics': Dict[str, List[str]],
+                'participants_map': Dict[str, Dict],
+                'current_question': Dict[str, Any],
+                'success': bool
+            }
+        """
+        try:
+            # Load session data
+            session_data = load_session(username, presentation_uuid, session_uuid)
+            if not session_data:
+                return {'success': False, 'error': 'Session not found'}
+            
+            # Calculate answer statistics
+            statistics = LiveSessionService.calculate_answer_statistics(
+                username, presentation_uuid, session_uuid, question_uuid
+            )
+            
+            # Store statistics in session data
+            store_success = LiveSessionService.store_answer_statistics(
+                username, presentation_uuid, session_uuid, question_uuid, statistics
+            )
+            
+            if not store_success:
+                return {'success': False, 'error': 'Failed to store statistics'}
+            
+            # Create participants map for easy lookup
+            participants_map = {}
+            for participant in session_data.get('participants', []):
+                participants_map[participant['uuid']] = participant
+            
+            # Get current question data
+            current_question = None
+            questions = session_data.get('questions', {})
+            if question_uuid in questions:
+                current_question = questions[question_uuid]
+            
+            return {
+                'statistics': statistics,
+                'participants_map': participants_map,
+                'current_question': current_question,
+                'success': True
+            }
+            
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+    
+    @staticmethod
+    def update_session_status(
+        username: str,
+        presentation_uuid: str,
+        session_uuid: str,
+        status: str
+    ) -> bool:
+        """
+        Update the status of a session.
+        
+        Args:
+            username: Instructor username
+            presentation_uuid: UUID of the presentation
+            session_uuid: UUID of the session
+            status: New status value
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        session_data = load_session(username, presentation_uuid, session_uuid)
+        if not session_data:
+            return False
+        
+        # Update session status
+        session_data['status'] = status
+        
+        # Save updated session data
+        session_file_path = get_session_file_path(username, presentation_uuid, session_uuid)
+        write_json_file(session_file_path, session_data)
+        return True
