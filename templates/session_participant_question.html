@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto max-w-4xl px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header with Progress Bars -->
+        <div class="flex justify-between items-start mb-8">
+            <!-- Question Progress (Top Left) -->
+            <div class="relative">
+                <div class="w-20 h-20 relative">
+                    <svg class="w-20 h-20 transform -rotate-90">
+                        <circle cx="40" cy="40" r="36" stroke="currentColor" stroke-width="8" fill="none" class="text-border"></circle>
+                        <circle cx="40" cy="40" r="36" stroke="currentColor" stroke-width="8" fill="none" 
+                                class="text-accent transition-all duration-300"
+                                stroke-dasharray="{{ (current_question_index / total_questions * 226) if total_questions > 0 else 0 }} 226"
+                                stroke-linecap="round"></circle>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-sm font-semibold">{{ current_question_index }}/{{ total_questions }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timer Progress (Top Right) -->
+            <div class="relative">
+                <div class="w-20 h-20 relative">
+                    <svg class="w-20 h-20 transform -rotate-90">
+                        <circle cx="40" cy="40" r="36" stroke="currentColor" stroke-width="8" fill="none" class="text-border"></circle>
+                        <circle id="timerCircle" cx="40" cy="40" r="36" stroke="currentColor" stroke-width="8" fill="none" 
+                                class="text-accent transition-all duration-1000"
+                                stroke-dasharray="226 226"
+                                stroke-linecap="round"></circle>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="timerText" class="text-lg font-bold">{{ timing_info.time_remaining | round | int if timing_info and timing_info.time_remaining else 0 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question Content -->
+        <div class="bg-surface/50 border border-border rounded-xl p-8 mb-6">
+            <!-- Objective Section -->
+            {% if current_objective %}
+            <div class="flex justify-between items-start mb-6 pb-4 border-b border-border">
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-text mb-2">{{ current_objective.text }}</h3>
+                    <p class="text-sm text-muted">Objective</p>
+                </div>
+                <div class="ml-4 text-right">
+                    <div class="inline-flex items-center px-3 py-1 bg-accent/10 border border-accent/20 rounded-full">
+                        <span class="text-sm font-semibold text-accent">{{ current_question.points if current_question and current_question.points else 0 }} pts</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold mb-4">Question {{ current_question_index }}</h2>
+                <p class="text-lg leading-relaxed">{{ current_question.text if current_question else "" }}</p>
+            </div>
+
+            <!-- Choices -->
+            <div class="space-y-3 mb-8">
+                {% if current_question and current_question.choices %}
+                    {% for choice in current_question.choices %}
+                    <label class="flex items-center p-4 bg-background border border-border rounded-lg cursor-pointer hover:bg-accent/5 hover:border-accent/30 transition-colors">
+                        <input type="{{ 'checkbox' if current_question.type == 'multiple_choice' else 'radio' }}" 
+                               name="choices" 
+                               value="{{ loop.index0 }}" 
+                               class="w-5 h-5 text-accent bg-background border-border rounded focus:ring-accent focus:ring-2">
+                        <span class="ml-3 text-base">{{ choice }}</span>
+                    </label>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-center">
+                <button id="submitAnswer" 
+                        type="button" 
+                        disabled
+                        class="px-8 py-3 bg-accent text-accent-foreground font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent/90 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg">
+                    Submit Answer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Timer functionality
+let timerInterval;
+let timeRemaining = parseInt('{{ timing_info.time_remaining|default(0) }}') || 0;
+const totalTime = parseInt('{{ current_question.time_limit|default(30) }}') || 30;
+
+function updateTimer() {
+    if (timeRemaining <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById('timerText').textContent = '0';
+        // Auto-submit or show time expired message
+        handleTimeExpired();
+        return;
+    }
+
+    timeRemaining--;
+    document.getElementById('timerText').textContent = Math.ceil(timeRemaining);
+    
+    // Update circular progress
+    const progress = Math.max(0, timeRemaining / totalTime);
+    const circumference = 2 * Math.PI * 36;
+    const dashArray = circumference * progress;
+    document.getElementById('timerCircle').style.strokeDasharray = `${dashArray} ${circumference}`;
+}
+
+function handleTimeExpired() {
+    // Disable all inputs
+    const inputs = document.querySelectorAll('input[name="choices"]');
+    inputs.forEach(input => {
+        input.disabled = true;
+        input.parentElement.classList.add('opacity-50', 'cursor-not-allowed');
+    });
+    
+    // Show time expired message
+    const submitBtn = document.getElementById('submitAnswer');
+    submitBtn.textContent = 'Time Expired';
+    submitBtn.disabled = true;
+    
+    // Optionally auto-submit if there are selections
+    const selectedInputs = document.querySelectorAll('input[name="choices"]:checked');
+    if (selectedInputs.length > 0) {
+        // Auto-submit the answer
+        submitAnswer();
+    }
+}
+
+// Choice selection handling
+function handleChoiceSelection() {
+    const selectedInputs = document.querySelectorAll('input[name="choices"]:checked');
+    const submitBtn = document.getElementById('submitAnswer');
+    
+    if (selectedInputs.length > 0) {
+        submitBtn.disabled = false;
+    } else {
+        submitBtn.disabled = true;
+    }
+}
+
+// Submit answer function
+function submitAnswer() {
+    const selectedInputs = document.querySelectorAll('input[name="choices"]:checked');
+    const selectedChoices = Array.from(selectedInputs).map(input => input.value);
+    
+    // Disable form during submission
+    const inputs = document.querySelectorAll('input[name="choices"]');
+    const submitBtn = document.getElementById('submitAnswer');
+    
+    inputs.forEach(input => input.disabled = true);
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    
+    // Submit answer via API
+    fetch('/api/submit-answer', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            choices: selectedChoices,
+            question_uuid: '{{ current_question.question_id|default("") }}'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message and wait for next question
+            submitBtn.textContent = 'Answer Submitted';
+            clearInterval(timerInterval);
+            
+            // Start polling for next question
+            pollForNextQuestion();
+        } else {
+            // Show error and re-enable form
+            submitBtn.textContent = 'Submit Answer';
+            submitBtn.disabled = false;
+            inputs.forEach(input => input.disabled = false);
+            
+            // Show error notification
+            showNotification(data.message || 'Failed to submit answer', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting answer:', error);
+        submitBtn.textContent = 'Submit Answer';
+        submitBtn.disabled = false;
+        inputs.forEach(input => input.disabled = false);
+        showNotification('Failed to submit answer', 'error');
+    });
+}
+
+// Poll for next question
+function pollForNextQuestion() {
+    const pollInterval = setInterval(() => {
+        fetch('/api/check-session-status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.has_new_question) {
+                // Reload page for next question
+                window.location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error polling for next question:', error);
+        });
+    }, 2000);
+    
+    // Clear polling after 30 seconds to prevent infinite polling
+    setTimeout(() => clearInterval(pollInterval), 30000);
+}
+
+// Show notification helper
+function showNotification(message, type = 'info') {
+    // Use the existing notyf notification system
+    const notyf = new Notyf({
+        duration: 3000,
+        position: { x: 'right', y: 'top' }
+    });
+    
+    if (type === 'error') {
+        notyf.error(message);
+    } else if (type === 'success') {
+        notyf.success(message);
+    } else {
+        notyf.info(message);
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Start timer if time remaining
+    if (timeRemaining > 0) {
+        timerInterval = setInterval(updateTimer, 1000);
+        updateTimer(); // Initial update
+    } else {
+        handleTimeExpired();
+    }
+    
+    // Add event listeners for choice selection
+    const choiceInputs = document.querySelectorAll('input[name="choices"]');
+    choiceInputs.forEach(input => {
+        input.addEventListener('change', handleChoiceSelection);
+    });
+    
+    // Add submit button click handler
+    document.getElementById('submitAnswer').addEventListener('click', submitAnswer);
+    
+    // Handle single choice selection (uncheck others)
+    const radioInputs = document.querySelectorAll('input[type="radio"][name="choices"]');
+    radioInputs.forEach(radio => {
+        radio.addEventListener('change', function() {
+            radioInputs.forEach(otherRadio => {
+                if (otherRadio !== radio) {
+                    otherRadio.checked = false;
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
