@@ -190,11 +190,47 @@ def live_session(presentation_id, session_id):
             flash('Session not found or not active', FLASH_ERROR)
             return redirect(url_for('sessions.run_presentation', presentation_id=presentation_id))
         
+        # Calculate initial timing and progress values
+        timing_info = None
+        current_question_index = 0
+        total_questions = 0
+        progress_percentage = 0
+        initial_time_remaining = 0
+        is_time_expired = False
+        
+        try:
+            from services.live_session_service import LiveSessionService
+            
+            # Get timing information
+            timing_info = LiveSessionService.get_session_timing(username, presentation_id, session_id)
+            initial_time_remaining = timing_info.get('time_remaining', 0) or 0
+            is_time_expired = LiveSessionService.is_question_time_expired(username, presentation_id, session_id)
+            
+            # Calculate question progress
+            if session_data.get('shuffled_question_uuids'):
+                total_questions = len(session_data['shuffled_question_uuids'])
+                current_uuid = timing_info.get('current_question_uuid') if timing_info else None
+                if current_uuid and current_uuid in session_data['shuffled_question_uuids']:
+                    current_question_index = session_data['shuffled_question_uuids'].index(current_uuid) + 1
+            
+            # Calculate progress percentage
+            progress_percentage = (current_question_index / total_questions * 100) if total_questions > 0 else 0
+            
+        except Exception:
+            # If timing service fails, continue with default values
+            pass
+        
         return render_template(
             'instructor/session_instructor_question.html',
             presentation=presentation,
             session_data=session_data,
-            session_id=session_id
+            session_id=session_id,
+            timing_info=timing_info,
+            current_question_index=current_question_index,
+            total_questions=total_questions,
+            progress_percentage=progress_percentage,
+            initial_time_remaining=initial_time_remaining,
+            is_time_expired=is_time_expired
         )
     except Exception as e:
         flash(f'Failed to load session: {str(e)}', FLASH_ERROR)
