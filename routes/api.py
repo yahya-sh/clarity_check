@@ -6,9 +6,11 @@ providing a clear boundary for API functionality and future
 API versioning support.
 """
 from flask import Blueprint, g, jsonify, request
-from app import require_participant
+from app import require_participant, require_instructor
 from services.pin_service_extended import PinServiceExtended
 from services.participant_service import ParticipantService
+from services.live_session_service import LiveSessionService
+from services.presentation_service import PresentationService
 from utils.response_utils import ResponseUtils
 
 routes = Blueprint('api', __name__)
@@ -43,19 +45,40 @@ def submit_answer():
         if not choices or not question_uuid:
             return ResponseUtils.error_response("Missing required fields: choices and question_uuid", 400)
         
-        # Here you would typically save the answer to a database or file
-        # For now, we'll just return a success response
-        # In a real implementation, you might want to:
-        # 1. Validate the question belongs to the current session
-        # 2. Save the participant's answer
-        # 3. Update any scoring or tracking systems
+        # Convert choices to integers (they come as strings from form)
+        try:
+            answer_indices = [int(choice) for choice in choices]
+        except (ValueError, TypeError):
+            return ResponseUtils.error_response("Invalid choice values", 400)
         
-        # Log the answer for debugging (remove in production)
-        print(f"Answer submitted: participant={g.participant.session_uuid}, question={question_uuid}, choices={choices}")
+        # Check if user has already answered this question
+        has_answered = LiveSessionService.has_user_answered_question(
+            username=g.participant.presentation_instructor_username,
+            presentation_uuid=g.participant.presentation_uuid,
+            session_uuid=g.participant.session_uuid,
+            user_uuid=g.participant.uuid,
+            question_uuid=question_uuid
+        )
+        
+        if has_answered:
+            return ResponseUtils.error_response("You already answered this question", 402)
+        
+        # Save the answer to the session JSON file
+        success = LiveSessionService.set_user_answer(
+            username=g.participant.presentation_instructor_username,
+            presentation_uuid=g.participant.presentation_uuid,
+            session_uuid=g.participant.session_uuid,
+            user_uuid=g.participant.uuid,
+            question_uuid=question_uuid,
+            answer_indices=answer_indices
+        )
+        
+        if not success:
+            return ResponseUtils.error_response("Failed to save answer", 500)
         
         return ResponseUtils.success_response({
             'message': 'Answer submitted successfully',
-            'choices': choices,
+            'choices': answer_indices,
             'question_uuid': question_uuid
         })
         
@@ -83,7 +106,6 @@ def check_session_status():
         
         if session_data.get('status') == 'active':
             try:
-                from services.live_session_service import LiveSessionService
                 timing_info = LiveSessionService.get_session_timing(
                     g.participant.presentation_instructor_username,
                     g.participant.presentation_uuid,
@@ -133,6 +155,34 @@ def check_session_status():
 
 # ── Instructor API Endpoints ─────────────────────────────────────────────────
 
+@routes.route('/presentations/<presentation_id>/live_session/<session_id>/responses-count', methods=['POST'])
+@require_instructor
+def get_live_responses_count(presentation_id, session_id):
+    """API endpoint to get live count of answered participants for current question."""
+    try:
+        data = request.get_json()
+        question_uuid = data.get('question_uuid')
+        
+        if not question_uuid:
+            return ResponseUtils.error_response("Missing question_uuid", 400)
+        
+        # Get answered participants count
+        answered_count, total_count = LiveSessionService.get_answered_participants_count(
+            username=g.user.username,
+            presentation_uuid=presentation_id,
+            session_uuid=session_id,
+            question_uuid=question_uuid
+        )
+        
+        return ResponseUtils.success_response({
+            'answered_count': answered_count,
+            'participants_count': total_count,
+            'all_answered': answered_count >= total_count and total_count > 0
+        })
+        
+    except Exception as e:
+        return ResponseUtils.error_response(f"Failed to get responses count: {str(e)}", 500)
+
 @routes.route('/presentations/<presentation_id>/objectives/<objective_id>/questions', methods=['POST'])
 def api_get_objective_questions(presentation_id, objective_id):
     """
@@ -142,8 +192,6 @@ def api_get_objective_questions(presentation_id, objective_id):
     without requiring instructor authentication (for future API use).
     """
     try:
-        from services.presentation_service import PresentationService
-        
         # For now, this requires instructor auth - could be expanded for public API
         username = request.args.get('username')  # For future API key auth
         if not username:
