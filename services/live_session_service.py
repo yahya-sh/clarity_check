@@ -650,7 +650,7 @@ class LiveSessionService:
                     'index': i,
                     'text': choice_text,
                     'count': len(responses),
-                    'percentage': (len(responses) / total_responded * 100) if total_responded > 0 else 0,
+                    'percentage': (len(responses) / total_participants * 100) if total_participants > 0 else 0,
                     'is_correct': is_correct,
                     'participants': responses
                 })
