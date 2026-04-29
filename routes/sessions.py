@@ -141,14 +141,48 @@ def start_session(presentation_id):
     try:
         # Use the standalone service function to move run data to session stage
         session_data = SessionService.move_run_to_session(username, presentation_id)
+        session_uuid = session_data.get('session_uuid')
         
-        return jsonify({
-            'success': True,
-            'session_uuid': session_data.get('session_uuid'),
-            'status': 'active'
-        })
+        if not session_uuid:
+            flash('Failed to create session: No session UUID generated', FLASH_ERROR)
+            return redirect(url_for('sessions.run_presentation', presentation_id=presentation_id))
+        
+        # Redirect to the live session page
+        return redirect(url_for('sessions.live_session', presentation_id=presentation_id, session_id=session_uuid))
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': f'Failed to start session: {str(e)}'
-        }), 500
+        flash(f'Failed to start session: {str(e)}', FLASH_ERROR)
+        return redirect(url_for('sessions.run_presentation', presentation_id=presentation_id))
+
+@routes.route('/presentations/<presentation_id>/live_session/<session_id>')
+@require_instructor
+def live_session(presentation_id, session_id):
+    """
+    Render the live session page for an instructor.
+    
+    Displays the active session with controls for managing participants,
+    questions, and session flow.
+    """
+    username = g.user.username
+    result = _load_presentation_or_abort(username, presentation_id)
+    if not isinstance(result, Presentation):
+        return result
+    presentation = result
+
+    try:
+        # Load session data
+        session_data = SessionService.get_session(username, presentation_id, session_id)
+        
+        # Check if session is active
+        if not SessionService.is_session_active(username, presentation_id, session_id):
+            flash('Session not found or not active', FLASH_ERROR)
+            return redirect(url_for('sessions.run_presentation', presentation_id=presentation_id))
+        
+        return render_template(
+            'instructor/live_session.html',
+            presentation=presentation,
+            session_data=session_data,
+            session_id=session_id
+        )
+    except Exception as e:
+        flash(f'Failed to load session: {str(e)}', FLASH_ERROR)
+        return redirect(url_for('sessions.run_presentation', presentation_id=presentation_id))
