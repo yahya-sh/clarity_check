@@ -2,7 +2,7 @@
 
 {% block content %}
 
-<div class="max-w-6xl mx-auto pt-4 px-4 sm:px-6 lg:px-8">
+<div class="max-w-6xl mx-auto pt-4 px-4 sm:px-6 lg:px-8" data-session-info data-time-remaining="{{ initial_time_remaining|default(0) }}" data-has-active-question="{{ 'true' if session_data.current_question_uuid else 'false' }}" data-is-time-expired="{{ 'true' if is_time_expired else 'false' }}">
     <!-- Top Header Section -->
     <div class="bg-gradient-to-r from-surface/80 to-surface/60 border border-border rounded-2xl p-4 sm:p-6 lg:p-8 shadow-lg backdrop-blur-sm mb-6">
         <div class="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-4 lg:gap-8">
@@ -33,16 +33,16 @@
     <div class="bg-surface/50 border border-border rounded-xl p-6 mb-6">
         <div class="mb-3">
             <h2 class="text-lg font-semibold text-text">
-                <span id="questionProgress">Question 1 of 4</span>
+                <span id="questionProgress">Question {{ current_question_index }} of {{ total_questions }}</span>
             </h2>
             {% if session_data.current_question_uuid %}
                 {% set current_question = session_data.questions[session_data.current_question_uuid] %}
                 {% set objective = session_data.objectives[current_question.parent_objective_id] %}
-                <p class="text-xs uppercase tracking-wider text-muted">{{ objective.text }}</p>
+                <p class="text-xs uppercase tracking-wider text-muted">{{ current_question.points or 0 }} points</p>
             {% endif %}
         </div>
         <div class="bg-border h-2 rounded-full overflow-hidden">
-            <div id="progressBar" class="bg-gradient-to-r from-accent to-accent/80 h-full rounded-full transition-all duration-300" style="width: 25%"></div>
+            <div id="progressBar" class="bg-gradient-to-r from-accent to-accent/80 h-full rounded-full transition-all duration-300" style="width: {{ progress_percentage|round|int }}%"></div>
         </div>
     </div>
 
@@ -72,14 +72,18 @@
                                 class="text-accent transition-all duration-300"
                                 style="transform: rotate(-90deg); stroke-dasharray: 226; stroke-dashoffset: 0"></circle>
                         </svg>
-                        <div id="timerText" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xl font-semibold text-text">30</div>
+                        <div id="timerText" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xl font-semibold text-text">{{ "%.0f"|format(initial_time_remaining) if initial_time_remaining > 0 else "0" }}</div>
                     </div>
                 </div>
                 
                 <!-- Timer Status Message -->
                 <div id="timerStatus" class="text-center text-sm text-muted mb-4">
                     {% if session_data.current_question_uuid %}
-                        Time remaining
+                        {% if is_time_expired %}
+                            Question timed out
+                        {% else %}
+                            Time remaining
+                        {% endif %}
                     {% else %}
                         No active question
                     {% endif %}
@@ -174,6 +178,16 @@ document.addEventListener('DOMContentLoaded', function() {
     let timerInterval;
     let timeRemaining = 0;
     let totalTime = 30; // Default time limit
+    let hasActiveQuestion = false;
+    let isTimeExpired = false;
+    
+    // Read initial values from data attributes
+    const sessionElement = document.querySelector('[data-session-info]');
+    if (sessionElement) {
+        timeRemaining = parseFloat(sessionElement.dataset.timeRemaining) || 0;
+        hasActiveQuestion = sessionElement.dataset.hasActiveQuestion === 'true';
+        isTimeExpired = sessionElement.dataset.isTimeExpired === 'true';
+    }
     
     // Calculate total questions across all objectives
     function getTotalQuestions() {
@@ -204,24 +218,28 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize timer
     function initTimer() {
-        if (sessionData.current_question_uuid && sessionData.end_time) {
+        // Set initial timer state from server values
+        if (hasActiveQuestion && timeRemaining > 0) {
             const currentQuestion = sessionData.questions[sessionData.current_question_uuid];
             totalTime = currentQuestion?.time_limit || 30;
             
-            const endTime = new Date(sessionData.end_time);
-            const now = new Date();
-            timeRemaining = Math.max(0, (endTime - now) / 1000);
-            
-            startTimer();
+            if (isTimeExpired) {
+                // Time already expired
+                timerCircle.style.strokeDashoffset = '226';
+                timerText.textContent = '0';
+                timerStatus.textContent = 'Question timed out';
+                showResultsBtn.disabled = false;
+            } else {
+                // Timer is active
+                startTimer();
+            }
         } else {
-            // No active question
+            // No active question or time expired
             timerCircle.style.strokeDashoffset = '226';
             timerText.textContent = '0';
-            timerStatus.textContent = 'Question timed out';
-            showResultsBtn.disabled = false;
+            timerStatus.textContent = isTimeExpired ? 'Question timed out' : 'No active question';
+            showResultsBtn.disabled = !isTimeExpired;
         }
-        
-        updateProgress();
     }
     
     // Start timer countdown
@@ -261,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.reload();
     });
     
-    // Initialize on load
+    // Initialize on load - progress is already set by template
     initTimer();
     
     // Refresh timer every 10 seconds to sync with server
