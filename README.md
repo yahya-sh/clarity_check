@@ -120,7 +120,7 @@ one example of a loop in your code.
 point.
 This value is received and processed by your back end
 Python code.
-- [ ] It doesn't generate any error message even if the user
+- [x] It doesn't generate any error message even if the user
 enters a wrong input.
 - [x] It is styled using your own CSS.
 - [ ] The code follows the code and style conventions as
