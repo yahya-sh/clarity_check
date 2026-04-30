@@ -86,30 +86,34 @@ Please provide below the file name and the line number(s) of
 at least one example of a class definition in your code as
 well as the names of two properties and two methods.
 - File name for the class definition: [models/user.py](models/user.py)
-- Line number(s) for the class definition: [3](models/user.py#3)
+- Line number(s) for the class definition: [10](models/user.py#10)
 - Name of two properties: 
-  - [username](models/user.py#4)
-  - [password_hash](models/user.py#5)
+  - [username](models/user.py#20)
+  - [password_hash](models/user.py#21)
 - Name of two methods: 
-  - [check_password](models/user.py#13)
-  - [to_dict](models/user.py#16)
+  - [check_password](models/user.py#29)
+  - [to_dict](models/user.py#32)
 - File name and line numbers where the methods are used: 
-  - [app.py:20](app.py#20)
-  - [app.py:41](app.py#41)
-- [ ] It makes use of JavaScript in the front end and uses the
+  - [services/auth_service.py:46](services/auth_service.py#46)
+  - [repositories/users.py:32](repositories/users.py#32)
+- [x] It makes use of JavaScript in the front end and uses the
 localStorage of the web browser.
-- [ ] It uses modern JavaScript (for example, let and const
+- [x] It uses modern JavaScript (for example, let and const
 rather than var).
+Examples:
+  - const usage: [templates/session.html:65](templates/session.html#65) - `const metaTag = document.querySelector('meta[name=csrf-token]')`
+  - let usage: [templates/join.html:75](templates/join.html#75) - `let debounceTimer = null`
+  - Modern features: Arrow functions, template literals, async/await throughout templates
 - [x] It makes use of the reading and writing to the same file
 feature.
 - [x] It contains conditional statements. Please provide below
 the file name and the line number(s) of at least
 one example of a conditional statement in your code.
-  - File name: [app.py](app.py)
+  - File name: [routes/participant.py](routes/participant.py)
   - Line number(s): 
-    - [19](app.py#19) - `if form.validate_on_submit():`
-    - [25](app.py#25) - `if saved_user:`
-    - [41](app.py#41) - `if user and user.check_password(password):`
+    - [25](routes/participant.py#25) - `if pin:`
+    - [29](routes/participant.py#29) - `if not is_valid:`
+    - [43](routes/participant.py#43) - `if not form.validate():`
 - [x] It contains loops. Please provide below the file name
 and the line number(s) of at least
 one example of a loop in your code.
@@ -123,7 +127,7 @@ Python code.
 - [x] It doesn't generate any error message even if the user
 enters a wrong input.
 - [x] It is styled using your own CSS.
-- [ ] The code follows the code and style conventions as
+- [x] The code follows the code and style conventions as
 introduced in the course, is fully documented using comments
 and doesn't contain unused or experimental code.
 In particular, the code should not use `print()` or
