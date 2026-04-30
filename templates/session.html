@@ -41,6 +41,9 @@
         {% if session_data and session_data.status == 'waiting' %}
         <h1 class="text-3xl font-bold mb-4 text-text">Session Lobby</h1>
         <p class="text-muted mb-6">You've joined the session! Waiting for the instructor to start the presentation...</p>
+        {% elif session_data and session_data.status == 'pending' %}
+        <h1 class="text-3xl font-bold mb-4 text-text">Wait Till Next Question Started</h1>
+        <p class="text-muted mb-6">Waiting for the next question...</p>
         {% else %}
         <h1 class="text-3xl font-bold mb-4 text-text">Waiting for Session to Start</h1>
         <p class="text-muted mb-6">The instructor hasn't started the session yet. Please wait...</p>

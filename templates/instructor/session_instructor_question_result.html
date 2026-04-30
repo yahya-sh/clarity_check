@@ -203,14 +203,6 @@
                 {% if session_data.participants %}
                     <div class="space-y-2 max-h-64 overflow-y-auto">
                         {% for participant in session_data.participants %}
-                            {% set answered = false %}
-                            {% if enhanced_stats.success and enhanced_stats.answer_statistics %}
-                                {% for choice_responses in enhanced_stats.answer_statistics.values() %}
-                                    {% if participant.uuid in choice_responses %}
-                                        {% set answered = true %}
-                                    {% endif %}
-                                {% endfor %}
-                            {% endif %}
                             
                             <div class="bg-surface/30 border border-border rounded-lg p-3 transition-all duration-200 hover:shadow-sm hover:shadow-border/50">
                                 <div class="flex items-center justify-between">
@@ -220,16 +212,9 @@
                                         </div>
                                         <div>
                                             <div class="font-medium text-text">{{ participant.nickname or 'Anonymous' }}</div>
-                                            <div class="text-sm text-muted">
-                                                {% if answered %}
-                                                    <span class="text-green-600">Answered</span>
-                                                {% else %}
-                                                    <span class="text-yellow-600">No response</span>
-                                                {% endif %}
-                                            </div>
+                                            
                                         </div>
                                     </div>
-                                    <div class="w-2 h-2 {{ 'bg-green-500' if answered else 'bg-yellow-500' }} rounded-full"></div>
                                 </div>
                             </div>
                         {% endfor %}

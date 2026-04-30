@@ -18,9 +18,8 @@
                 </div>
             </div>
 
-            <form method="POST" class="space-y-4" id="joinForm">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                
+            <form method="POST" action="{{ url_for('participant.handle_join') }}" class="space-y-4" id="joinForm">
+                {{ form.hidden_tag() }}
                 <div>
                     <label for="nickname" class="block text-sm font-medium text-text mb-2">
                         Your Nickname
@@ -39,7 +38,7 @@
                     <label for="pin" class="block text-sm font-medium text-text mb-2">
                         PIN Code
                     </label>
-                    {{ form.pin(class='w-full px-4 py-3 bg-background border border-border rounded-lg text-text placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors no-spinner', placeholder='Enter PIN code') }}
+                    {{ form.pin(class='w-full px-4 py-3 bg-background border border-border rounded-lg text-text placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors', placeholder='Enter PIN code') }}
                     {% if form.pin.errors %}
                         {% for error in form.pin.errors %}
                             <p class="text-xs text-red-500 mt-1">{{ error }}</p>
