@@ -12,7 +12,7 @@ from repositories.sessions import load_session
 from repositories.base import NotFoundError, ValidationError
 from utils.file_utils import write_json_file
 from utils.path_utils import get_session_file_path
-
+from services.understanding_service import UnderstandingService
 
 class LiveSessionService:
     """
@@ -409,7 +409,7 @@ class LiveSessionService:
         username: str,
         presentation_uuid: str,
         session_uuid: str,
-        question_uuid: str
+        current_question_uuid: str
     ) -> Dict[str, List[str]]:
         """
         Calculate answer statistics for a specific question.
@@ -435,29 +435,35 @@ class LiveSessionService:
             raise NotFoundError("Session not found")
         
         # Initialize statistics dictionary
-        statistics = {}
+        answers_statistics = session_data.get('answers_statistics', {})
         
         # Get all user answers for this question
         users_answers = session_data.get('users_answers', {})
+        # json structure users_answers key in session json file
+        # users answers:
+        # 	user uuid:
+        # 		question uuid:
+        # 			choices indicies
+
+        # json structure answer_statistics key in session json file
+        # answers_statistics:	
+        #   question uuid:
+        # 		choices indicies:
+        # 			users uuids
+
+
+        # # Group users by their answer choices
+        current_question_answers_statistics = {}
+        for user_uuid, question_choices in users_answers.items():
+            current_question_choices_indicies = question_choices[current_question_uuid]
+            for choice_index in current_question_choices_indicies:
+                choice_users_uuids = current_question_answers_statistics.get(choice_index, [])
+                choice_users_uuids.append(user_uuid)
+                current_question_answers_statistics[choice_index] = choice_users_uuids
         
-        # Group users by their answer choices
-        for user_uuid, user_answers in users_answers.items():
-            if question_uuid in user_answers:
-                answer_indices = user_answers[question_uuid]
-                # Handle both single answer (int) and multiple answers (list)
-                if isinstance(answer_indices, list):
-                    for answer_index in answer_indices:
-                        choice_key = str(answer_index)
-                        if choice_key not in statistics:
-                            statistics[choice_key] = []
-                        statistics[choice_key].append(user_uuid)
-                else:
-                    choice_key = str(answer_indices)
-                    if choice_key not in statistics:
-                        statistics[choice_key] = []
-                    statistics[choice_key].append(user_uuid)
+        answers_statistics[current_question_uuid] = current_question_answers_statistics
         
-        return statistics
+        return answers_statistics
     
     @staticmethod
     def store_answer_statistics(
@@ -599,26 +605,31 @@ class LiveSessionService:
                 return {'success': False, 'error': 'Question not found'}
             
             # Get basic answer statistics
-            answer_statistics = LiveSessionService.calculate_answer_statistics(
+            answers_statistics = LiveSessionService.calculate_answer_statistics(
                 username, presentation_uuid, session_uuid, question_uuid
             )
+            answer_statistics = answers_statistics[current_question.get('question_id')]
             
             # Calculate total responded participants
             total_responded = 0
-            for choice_responses in answer_statistics.values():
+            for choice_index, choice_responses in answer_statistics.items():
                 total_responded += len(choice_responses)
             
-            # Calculate correct answers count
+            # Calculate correct answers count and how many users responded
             correct_answers = 0
             correct_indices = set()
+
+            users_responded = set()
             
             # Handle both single choice and multiple choice questions
             if isinstance(current_question.get('correct_indices'), list):
                 correct_indices = set(str(idx) for idx in current_question['correct_indices'])
             elif current_question.get('correct_indices') is not None:
                 correct_indices = {str(current_question['correct_indices'])}
+
             
             for choice_index, participants in answer_statistics.items():
+                users_responded.update(participants)
                 if choice_index in correct_indices:
                     correct_answers += len(participants)
             
@@ -634,7 +645,6 @@ class LiveSessionService:
             total_participants = len(session_data.get('participants', []))
             
             # Create clarity analysis
-            from services.understanding_service import UnderstandingService
             clarity_analysis = UnderstandingService.get_clarity_analysis(
                 correct_answers, total_responded
             )
@@ -643,7 +653,7 @@ class LiveSessionService:
             choice_data = []
             for i, choice_text in enumerate(current_question.get('choices', [])):
                 choice_index = str(i)
-                responses = answer_statistics.get(choice_index, [])
+                responses = answer_statistics.get(i, [])
                 is_correct = choice_index in correct_indices
                 
                 choice_data.append({
@@ -658,8 +668,8 @@ class LiveSessionService:
             return {
                 'success': True,
                 'question_stats': {
-                    'responded': f"{total_responded}/{total_participants}",
-                    'responded_count': total_responded,
+                    'responded': f"{len(users_responded)}/{total_participants}",
+                    'total_responded': total_responded,
                     'total_participants': total_participants,
                     'correct_answers': correct_answers,
                     'correct_percentage': (correct_answers / total_responded * 100) if total_responded > 0 else 0,

@@ -406,12 +406,7 @@ def next_question(presentation_id, session_id):
             # Change session status to done
             try:
                 SessionService.set_status(username, presentation_id, session_id, SESSION_DONE)
-                # Calculate participants points after session is done
-                try:
-                    SessionService.calculate_participants_points(username, presentation_id, session_id)
-                except Exception as points_error:
-                    # Log error but don't fail the session completion
-                    print(f"Warning: Failed to calculate participants points: {str(points_error)}")
+                SessionService.calculate_participants_points(username, presentation_id, session_id)
                 flash('Session completed! All questions have been answered.', FLASH_SUCCESS)
                 # Redirect to the result page
                 return redirect(url_for('sessions.session_result', presentation_id=presentation_id, session_id=session_id))

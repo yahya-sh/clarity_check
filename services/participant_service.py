@@ -172,50 +172,6 @@ class ParticipantService:
         return ParticipantService.check_session_status(instructor_username, presentation_uuid, session_uuid)
     
     @staticmethod
-    def validate_participant_data(nickname: str) -> Tuple[bool, Optional[str]]:
-        """
-        Validate participant data for joining a session.
-        
-        Args:
-            nickname: The participant's nickname
-            
-        Returns:
-            Tuple of (is_valid, error_message)
-            - is_valid: True if data is valid
-            - error_message: Error message if invalid, None if valid
-        """
-        if not nickname:
-            return False, "Nickname is required"
-        
-        nickname = nickname.strip()
-        if not nickname:
-            return False, "Nickname cannot be empty"
-        
-        return True, None
-    
-    @staticmethod
-    def validate_pin_data(pin: str) -> Tuple[bool, Optional[str]]:
-        """
-        Validate PIN data for joining a session.
-        
-        Args:
-            pin: The PIN code
-            
-        Returns:
-            Tuple of (is_valid, error_message)
-            - is_valid: True if data is valid
-            - error_message: Error message if invalid, None if valid
-        """
-        if not pin:
-            return False, "PIN is required"
-        
-        pin = pin.strip()
-        if not pin:
-            return False, "PIN cannot be empty"
-        
-        return True, None
-    
-    @staticmethod
     def get_join_success_redirect_url(session_uuid: str) -> str:
         """
         Get the redirect URL after successful session join.
@@ -228,37 +184,10 @@ class ParticipantService:
         """
         return f"/session/{session_uuid}"
     
-    @staticmethod
-    def get_join_failure_redirect_url() -> str:
-        """
-        Get the redirect URL after failed session join.
-        
-        Returns:
-            URL string for redirect
-        """
-        return "/join"
-    
-    @staticmethod
-    def get_join_form_validation_flash_message() -> str:
-        """Get the flash message for join form validation failures."""
-        return "Please correct the errors below."
-    
+
+
     @staticmethod
     def get_join_failure_flash_message() -> str:
         """Get the flash message for join failures."""
         return "Presentation not found with this PIN."
     
-    @staticmethod
-    def extract_form_data(form) -> Tuple[str, str]:
-        """
-        Extract PIN and nickname from a form object.
-        
-        Args:
-            form: Form object with pin and nickname data
-            
-        Returns:
-            Tuple of (pin, nickname)
-        """
-        pin = str(form.pin.data) if hasattr(form, 'pin') and form.pin else ''
-        nickname = form.nickname.data.strip() if hasattr(form, 'nickname') and form.nickname else ''
-        return pin, nickname
