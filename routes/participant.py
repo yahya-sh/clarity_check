@@ -134,7 +134,6 @@ def participant_session(session_uuid):
             user_uuid=g.participant.uuid,
             question_uuid=current_question['question_id']
         )
-    
     return render_template('session.html', 
                          session_data=session_data,
                          timing_info=timing_info,
