@@ -23,6 +23,8 @@ from config.constants import SESSION_ACTIVE
 import random
 from datetime import datetime, timedelta
 
+from utils.path_utils import get_session_file_path
+
 
 class SessionService:
     """
@@ -454,11 +456,9 @@ class SessionService:
         # Delete run file after successful session creation
         try:
             runs_repo.delete_run_data(username, presentation_uuid)
-        except Exception as e:
-            # Log the error but don't fail the session creation
+        except Exception:
             # The session was successfully created, so we continue
-            print(f"Warning: Failed to delete run data file after session creation: {str(e)}")
-        
+            pass
         return session_data
     
     @staticmethod
@@ -546,7 +546,7 @@ class SessionService:
         })
         
         # Save updated session data
-        session_file_path = f"/Users/ysh/Remotecoders/Final_Project/Project/data/instructors/{username}/sessions/{presentation_uuid}/{session_uuid}.json"
+        session_file_path = get_session_file_path(username, presentation_uuid, session_uuid)
         from utils.file_utils import write_json_file
         write_json_file(session_file_path, session_data)
         
@@ -580,7 +580,7 @@ class SessionService:
         session_data[f'{status}_at'] = datetime.now().isoformat()
         
         # Save updated session data
-        session_file_path = f"/Users/ysh/Remotecoders/Final_Project/Project/data/instructors/{username}/sessions/{presentation_uuid}/{session_uuid}.json"
+        session_file_path = get_session_file_path(username, presentation_uuid, session_uuid)
         from utils.file_utils import write_json_file
         write_json_file(session_file_path, session_data)
         
@@ -602,13 +602,9 @@ class SessionService:
             
         Returns:
             Updated session data dictionary with users_points map
-            
-        Raises:
-            NotFoundError: If session not found
-            ValidationError: If required data is missing
         """
         # Get current session data
-        session_data = SessionService.get_session(username, presentation_uuid, session_uuid)
+        session_data = load_session(username, presentation_uuid, session_uuid)
         
         # Initialize users_points map
         users_points = {}
@@ -677,7 +673,7 @@ class SessionService:
         session_data['users_points'] = users_points
         
         # Save updated session data
-        session_file_path = f"/Users/ysh/Remotecoders/Final_Project/Project/data/instructors/{username}/sessions/{presentation_uuid}/{session_uuid}.json"
+        session_file_path = get_session_file_path(username, presentation_uuid, session_uuid)
         from utils.file_utils import write_json_file
         write_json_file(session_file_path, session_data)
         
@@ -861,7 +857,7 @@ class SessionService:
         session_data['end_time'] = None
         
         # Save updated session data
-        session_file_path = f"/Users/ysh/Remotecoders/Final_Project/Project/data/instructors/{username}/sessions/{presentation_uuid}/{session_uuid}.json"
+        session_file_path = get_session_file_path(username, presentation_uuid, session_uuid)
         from utils.file_utils import write_json_file
         write_json_file(session_file_path, session_data)
         
