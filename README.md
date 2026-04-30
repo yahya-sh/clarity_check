@@ -20,6 +20,9 @@ Clarity Check transforms presentations from one-way delivery into real learning 
 
 Don’t just present your message — prove it was understood.
 
+## Live Demo
+[https://claritycheck.pythonanywhere.com](https://claritycheck.pythonanywhere.com)
+
 ## Prerequisites
 
 - Flask
