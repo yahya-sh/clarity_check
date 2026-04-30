@@ -1,3 +1,18 @@
+"""
+routes/__init__.py — HTTP route handlers package initialization.
+
+This package contains all Flask route modules organized by functionality:
+- auth: User authentication and session management
+- public: Public pages and PIN-based access
+- dashboard: Instructor dashboard and presentation management
+- presentations: Presentation CRUD operations
+- objectives: Objective management within presentations
+- questions: Question management within objectives
+- sessions: Live session management and control
+- participant: Participant session access and interaction
+- api: JSON API endpoints for both participants and instructors
+"""
+
 from .auth import routes as auth_routes
 from .public import routes as public_routes
 from .dashboard import routes as dashboard_routes

@@ -85,44 +85,63 @@
     </div>
 </div>
 <script>
-// Timer functionality
+/**
+ * Timer functionality
+ * 
+ * Manages countdown timer for question answering with visual progress indicator
+ * Updates timer display and handles time expiration scenarios
+ */
 let timerInterval;
 let timeRemaining = parseFloat('{{ timing_info.time_remaining|default(0) }}') || 0;
 const totalTime = parseInt('{{ current_question.time_limit|default(30) }}') || 30;
 
+/**
+ * Update timer display and circular progress indicator
+ * 
+ * Decrements remaining time, updates text display, and visualizes progress
+ */
 function updateTimer() {
     if (timeRemaining <= 0) {
+        // Stop timer when time expires
         clearInterval(timerInterval);
         document.getElementById('timerText').textContent = '0';
-        // Auto-submit or show time expired message
+        
+        // Handle time expiration - disable inputs and show message
         handleTimeExpired();
         return;
     }
 
+    // Decrement time and update display
     timeRemaining--;
     document.getElementById('timerText').textContent = Math.ceil(timeRemaining);
     
-    // Update circular progress
+    // Update circular progress bar
     const progress = Math.max(0, timeRemaining / totalTime);
-    const circumference = 2 * Math.PI * 36;
+    const circumference = 2 * Math.PI * 36; // Circle circumference
     const dashArray = circumference * progress;
     document.getElementById('timerCircle').style.strokeDasharray = `${dashArray} ${circumference}`;
 }
 
+/**
+ * Handle time expiration when question timer reaches zero
+ * 
+ * Disables all form inputs, shows expiration message, and either
+ * auto-submits existing answers or starts polling for next question
+ */
 function handleTimeExpired() {
-    // Disable all inputs
+    // Disable all choice inputs to prevent further interaction
     const inputs = document.querySelectorAll('input[name="choices"]');
     inputs.forEach(input => {
         input.disabled = true;
         input.parentElement.classList.add('opacity-50', 'cursor-not-allowed');
     });
     
-    // Show time expired message
+    // Update submit button to show expired state
     const submitBtn = document.getElementById('submitAnswer');
     submitBtn.textContent = 'Time Expired';
     submitBtn.disabled = true;
     
-    // Check if there are any selections to auto-submit
+    // Check if participant made any selections before time expired
     const selectedInputs = document.querySelectorAll('input[name="choices"]:checked');
     if (selectedInputs.length > 0) {
         // Auto-submit the answer if participant made selections
@@ -132,18 +151,24 @@ function handleTimeExpired() {
         clearInterval(timerInterval);
         pollForNextQuestion();
         
-        // Show timeout message and reload after a short delay to trigger waiting screen
+        // Show timeout message and reload after short delay
         setTimeout(() => {
             window.location.reload();
         }, 1000);
     }
 }
 
-// Choice selection handling
+/**
+ * Handle choice selection and submit button state
+ * 
+ * Enables/disables submit button based on whether participant has
+ * selected any answer choices
+ */
 function handleChoiceSelection() {
     const selectedInputs = document.querySelectorAll('input[name="choices"]:checked');
     const submitBtn = document.getElementById('submitAnswer');
     
+    // Enable submit button if at least one choice is selected
     if (selectedInputs.length > 0) {
         submitBtn.disabled = false;
     } else {
@@ -151,20 +176,26 @@ function handleChoiceSelection() {
     }
 }
 
-// Submit answer function
+/**
+ * Submit participant's answer to the server
+ * 
+ * Collects selected choices, disables form, sends API request,
+ * and handles success/error responses with appropriate user feedback
+ */
 function submitAnswer() {
     const selectedInputs = document.querySelectorAll('input[name="choices"]:checked');
     const selectedChoices = Array.from(selectedInputs).map(input => input.value);
     
-    // Disable form during submission
+    // Get form elements for manipulation during submission
     const inputs = document.querySelectorAll('input[name="choices"]');
     const submitBtn = document.getElementById('submitAnswer');
     
+    // Disable form elements during submission to prevent duplicate submissions
     inputs.forEach(input => input.disabled = true);
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
     
-    // Submit answer via API
+    // Send answer to server via API
     fetch('/api/submit-answer', {
         method: 'POST',
         headers: {
@@ -179,23 +210,24 @@ function submitAnswer() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Show success message and wait for next question
+            // Handle successful submission
             submitBtn.textContent = 'Answer Submitted';
-            clearInterval(timerInterval);
+            clearInterval(timerInterval); // Stop timer on successful submit
             
             // Start polling for next question
             pollForNextQuestion();
         } else {
-            // Show error and re-enable form
+            // Handle submission error
             submitBtn.textContent = 'Submit Answer';
             submitBtn.disabled = false;
             inputs.forEach(input => input.disabled = false);
             
-            // Show error notification
+            // Show error notification to user
             showNotification(data.message || 'Failed to submit answer', 'error');
         }
     })
     .catch(error => {
+        // Handle network or server error
         console.error('Error submitting answer:', error);
         submitBtn.textContent = 'Submit Answer';
         submitBtn.disabled = false;
@@ -204,7 +236,12 @@ function submitAnswer() {
     });
 }
 
-// Poll for next question
+/**
+ * Poll for next question or session state changes
+ * 
+ * Continuously checks session status to detect when new questions
+ * become available or when time expires, triggering page reloads as needed
+ */
 function pollForNextQuestion() {
     const pollInterval = setInterval(() => {
         fetch('/api/check-session-status', {
@@ -222,6 +259,8 @@ function pollForNextQuestion() {
                 if (data.has_new_question || data.is_time_expired) {
                     // Reload page to show appropriate state (next question or waiting screen)
                     window.location.reload();
+                }else if(data.status == 'done'){
+                    window.location.href = "{{ url_for('participant.session_result', session_uuid=session_uuid) }}";
                 }
             }
         })
@@ -230,18 +269,26 @@ function pollForNextQuestion() {
         });
     }, 2000);
     
-    // Clear polling after 60 seconds to prevent infinite polling
+    // Auto-cleanup after 60 seconds to prevent infinite polling
     setTimeout(() => clearInterval(pollInterval), 60000);
 }
 
-// Show notification helper
+/**
+ * Display notification messages using the Notyf library
+ * 
+ * Provides consistent user feedback for various actions and errors
+ * 
+ * @param {string} message - The message to display
+ * @param {string} type - Type of notification ('info', 'success', 'error')
+ */
 function showNotification(message, type = 'info') {
-    // Use the existing notyf notification system
+    // Initialize Notyf notification system
     const notyf = new Notyf({
-        duration: 3000,
-        position: { x: 'right', y: 'top' }
+        duration: 3000, // 3 second display
+        position: { x: 'right', y: 'top' } // Top-right corner
     });
     
+    // Show appropriate notification based on type
     if (type === 'error') {
         notyf.error(message);
     } else if (type === 'success') {
@@ -251,29 +298,36 @@ function showNotification(message, type = 'info') {
     }
 }
 
-// Initialize
+/**
+ * Initialize the question interface when DOM is ready
+ * 
+ * Sets up timer, event listeners, and initial state based on
+ * remaining time for the current question
+ */
 document.addEventListener('DOMContentLoaded', function() {
-    // Start timer if time remaining
+    // Start countdown timer if time is remaining
     if (timeRemaining > 0) {
         timerInterval = setInterval(updateTimer, 1000);
-        updateTimer(); // Initial update
+        updateTimer(); // Initial timer update
     } else {
+        // Handle immediate time expiration
         handleTimeExpired();
     }
     
-    // Add event listeners for choice selection
+    // Set up choice selection handling
     const choiceInputs = document.querySelectorAll('input[name="choices"]');
     choiceInputs.forEach(input => {
         input.addEventListener('change', handleChoiceSelection);
     });
     
-    // Add submit button click handler
+    // Set up submit button functionality
     document.getElementById('submitAnswer').addEventListener('click', submitAnswer);
     
-    // Handle single choice selection (uncheck others)
+    // Handle single choice questions (uncheck other options when one is selected)
     const radioInputs = document.querySelectorAll('input[type="radio"][name="choices"]');
     radioInputs.forEach(radio => {
         radio.addEventListener('change', function() {
+            // When this radio is selected, uncheck all other radios
             radioInputs.forEach(otherRadio => {
                 if (otherRadio !== radio) {
                     otherRadio.checked = false;

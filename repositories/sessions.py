@@ -1,3 +1,11 @@
+"""
+repositories/sessions.py — Live session data repository.
+
+Handles all CRUD operations for live session data including
+participant answers, timing information, and session state management.
+Provides file-based storage with standardized error handling.
+"""
+
 import os
 import uuid
 from datetime import datetime
@@ -11,10 +19,21 @@ from utils.file_utils import read_json_file, write_json_file, delete_file, FileO
 
 
 def create_session(session_uuid, username: str, presentation_uuid: str, participants: List[Dict] = None) -> Dict:
-    """Create a new session and return session data"""
+    """
+    Create a new live session with initial participants.
+    
+    Args:
+        session_uuid: Unique identifier for the new session
+        username: Instructor username who owns the session
+        presentation_uuid: UUID of the presentation being sessioned
+        participants: Initial list of participant dictionaries (optional)
+        
+    Returns:
+        Created session data dictionary with all required fields
+    """
     created_at = datetime.now().isoformat()
 
-    # reappend session uuid to participants
+    # Reappend session uuid to participants for consistency
     if participants:
         for participant in participants:
             participant['session_uuid'] = session_uuid
@@ -35,7 +54,17 @@ def create_session(session_uuid, username: str, presentation_uuid: str, particip
     return session_data
 
 def load_session(username: str, presentation_uuid: str, session_uuid: str) -> Optional[Dict]:
-    """Load session data from file"""
+    """
+    Load session data from file storage.
+    
+    Args:
+        username: Instructor username who owns the session
+        presentation_uuid: UUID of the presentation
+        session_uuid: UUID of the session to load
+        
+    Returns:
+        Session data dictionary if found and readable, None if file doesn't exist or is corrupted
+    """
     session_file_path = get_session_file_path(username, presentation_uuid, session_uuid)
     try:
         return read_json_file(session_file_path)
@@ -43,7 +72,18 @@ def load_session(username: str, presentation_uuid: str, session_uuid: str) -> Op
         return None
 
 def update_session_participants(username: str, presentation_uuid: str, session_uuid: str, participants: List[Dict]) -> bool:
-    """Update participants in a session"""
+    """
+    Update the participants list in an existing session.
+    
+    Args:
+        username: Instructor username who owns the session
+        presentation_uuid: UUID of the presentation
+        session_uuid: UUID of the session to update
+        participants: New list of participant dictionaries
+        
+    Returns:
+        True if update succeeded, False if session not found or file operation failed
+    """
     session_data = load_session(username, presentation_uuid, session_uuid)
     if not session_data:
         return False
@@ -59,7 +99,16 @@ def update_session_participants(username: str, presentation_uuid: str, session_u
         return False
 
 def get_all_sessions_for_presentation(username: str, presentation_uuid: str) -> List[Dict]:
-    """Get all sessions for a presentation"""
+    """
+    Get all session data for a specific presentation.
+    
+    Args:
+        username: Instructor username who owns the presentation
+        presentation_uuid: UUID of the presentation
+        
+    Returns:
+        List of session data dictionaries sorted by creation date (newest first)
+    """
     presentation_sessions_dir = get_presentation_sessions_dir(username, presentation_uuid)
     sessions = []
     
@@ -74,14 +123,22 @@ def get_all_sessions_for_presentation(username: str, presentation_uuid: str) -> 
                 if session_data:
                     sessions.append(session_data)
             except (json.JSONDecodeError, FileNotFoundError):
-                continue
+                continue  # Skip corrupted or missing session files
     
     # Sort by created_at (newest first)
     sessions.sort(key=lambda x: x.get('created_at', ''), reverse=True)
     return sessions
 
 def get_all_sessions_for_user(username: str) -> List[Dict]:
-    """Get all sessions for a user across all presentations"""
+    """
+    Get all session data for a user across all their presentations.
+    
+    Args:
+        username: Instructor username
+        
+    Returns:
+        List of all session data dictionaries sorted by creation date (newest first)
+    """
     user_sessions_dir = get_user_sessions_dir(username)
     all_sessions = []
     
@@ -100,6 +157,16 @@ def get_all_sessions_for_user(username: str) -> List[Dict]:
     return all_sessions
 
 def delete_session(username: str, presentation_uuid: str, session_uuid: str) -> bool:
-    """Delete a session file"""
+    """
+    Delete a session file from storage.
+    
+    Args:
+        username: Instructor username who owns the session
+        presentation_uuid: UUID of the presentation
+        session_uuid: UUID of the session to delete
+        
+    Returns:
+        True if session file was found and deleted, False otherwise
+    """
     session_file_path = get_session_file_path(username, presentation_uuid, session_uuid)
     return delete_file(session_file_path)

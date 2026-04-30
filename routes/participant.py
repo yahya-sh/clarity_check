@@ -136,6 +136,7 @@ def participant_session(session_uuid):
         )
     return render_template('session.html', 
                          session_data=session_data,
+                         session_uuid=session_uuid,
                          timing_info=timing_info,
                          current_question=current_question,
                          current_objective=current_objective,

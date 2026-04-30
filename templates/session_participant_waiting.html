@@ -86,7 +86,7 @@ function updateTimer() {
 // Poll for next question
 function pollForNextQuestion() {
     const pollInterval = setInterval(() => {
-        fetch('/api/check-session-status', {
+        fetch(`{{ url_for('api.check_session_status') }}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -101,6 +101,8 @@ function pollForNextQuestion() {
                 if (data.has_new_question) {
                     // Reload page for next question
                     window.location.reload();
+                }else if(data.status == 'done'){
+                    window.location.href = "{{ url_for('participant.session_result', session_uuid=session_uuid) }}";
                 }
             }
         })

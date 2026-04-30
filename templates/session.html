@@ -59,15 +59,21 @@
 {% block scripts %}
 {% if not session_data or session_data.status != 'active' or is_time_expired %}
 <script>
-// CSRF token handling for Flask-WTF
+
+/**
+ * CSRF token handling for Flask-WTF
+ * 
+ * Provides functions to retrieve CSRF tokens from both meta tags and cookies
+ * to support secure form submissions in the application
+ */
 function getCSRFToken() {
-    // Flask-WTF stores CSRF token in a meta tag by default
+    // Try to get CSRF token from meta tag first (preferred method)
     const metaTag = document.querySelector('meta[name=csrf-token]');
     if (metaTag) {
         return metaTag.getAttribute('content');
     }
     
-    // Fallback to cookie method
+    // Fallback to cookie method if meta tag is not available
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
         const cookies = document.cookie.split(';');
@@ -83,11 +89,27 @@ function getCSRFToken() {
     return cookieValue;
 }
 
-// Poll session status every 2 seconds for more responsive updates
+/**
+ * Session polling and status management
+ * 
+ * Handles real-time session status checking and automatic page updates
+ * when session state changes (active, new question, etc.)
+ */
+
+// Poll session status every 2 seconds for responsive updates
 let pollInterval = setInterval(checkSessionStatus, 2000);
 
+/**
+ * Check session status and handle state changes
+ * 
+ * Makes API call to check if session has become active or if new
+ * questions are available, triggering page reload when necessary
+ * 
+ * @async
+ */
 async function checkSessionStatus() {
     try {
+        // Make API request to check current session status
         const response = await fetch(`{{ url_for('api.check_session_status') }}`, {
             method: 'POST',
             headers: {
@@ -99,11 +121,13 @@ async function checkSessionStatus() {
         
         const data = await response.json();
         
-        // Check for any state changes that require page reload
+        // Check for state changes that require page reload
         if (data.success) {
-            // If session becomes active or new question is available, reload
+            // If session becomes active or new question is available, reload page
             if (data.status === 'active' || data.has_new_question) {
                 window.location.reload();
+            }else if(data.status == 'done'){
+                    window.location.href = "{{ url_for('participant.session_result', session_uuid=session_uuid) }}";
             }
         }
     } catch (error) {
@@ -111,7 +135,12 @@ async function checkSessionStatus() {
     }
 }
 
-// Clean up polling when page is unloaded
+/**
+ * Clean up polling interval when page is unloaded
+ * 
+ * Prevents memory leaks by stopping the polling interval
+ * when user navigates away from the page
+ */
 window.addEventListener('beforeunload', function() {
     if (pollInterval) {
         clearInterval(pollInterval);
