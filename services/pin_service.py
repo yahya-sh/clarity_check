@@ -15,7 +15,7 @@ returns plain Python values so it can be tested independently.
 import uuid
 import random
 import string
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from repositories import runs_repo
 
@@ -83,7 +83,7 @@ def get_or_renew_pin(username: str, presentation_id: str) -> str:
     Returns:
         The active 6-digit PIN string.
     """
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     expires_delta = timedelta(minutes=PIN_LIFETIME_MINUTES)
 
     # Remove stale run files first so they don't pollute uniqueness checks.
@@ -165,7 +165,7 @@ def refresh_pin(username: str, presentation_id: str) -> dict:
         raise ValueError("Existing run has no PIN code.")
 
     new_pin = generate_unique_pin()
-    new_expires_at = datetime.now() + timedelta(minutes=PIN_LIFETIME_MINUTES)
+    new_expires_at = datetime.now(timezone.utc) + timedelta(minutes=PIN_LIFETIME_MINUTES)
 
     success, result = runs_repo.rename_run_file(
         username, presentation_id, old_pin, new_pin

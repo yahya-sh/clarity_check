@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 class Presentation:
@@ -20,8 +20,8 @@ class Presentation:
         self.description = description
         self.username = username
         self.status = status
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        self.created_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(timezone.utc)
         self.objectives = []
         self.session_pin = None
         self.pin_expires_at = None

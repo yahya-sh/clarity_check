@@ -7,8 +7,7 @@ Provides file-based storage with standardized error handling.
 """
 
 import os
-import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from utils.path_utils import (
     get_user_sessions_dir,
@@ -31,7 +30,7 @@ def create_session(session_uuid, username: str, presentation_uuid: str, particip
     Returns:
         Created session data dictionary with all required fields
     """
-    created_at = datetime.now().isoformat()
+    created_at = datetime.now(timezone.utc).isoformat()
 
     # Reappend session uuid to participants for consistency
     if participants:

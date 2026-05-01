@@ -6,7 +6,7 @@ navigation, timing management, and session flow control.
 """
 
 from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from repositories.sessions import load_session
 from repositories.base import NotFoundError, ValidationError
@@ -84,7 +84,7 @@ class LiveSessionService:
         
         # Calculate new timing
         time_limit = next_question.get('time_limit', 30)  # Default 30 seconds
-        start_time = datetime.now()
+        start_time = datetime.now(timezone.utc)
         end_time = start_time + timedelta(seconds=time_limit)
         
         # Update session data
@@ -169,7 +169,7 @@ class LiveSessionService:
             try:
                 start_time = datetime.fromisoformat(start_time_str)
                 end_time = datetime.fromisoformat(end_time_str)
-                now = datetime.now()
+                now = datetime.now(timezone.utc)
                 
                 if now < end_time:
                     timing_info['time_remaining'] = (end_time - now).total_seconds()
@@ -205,7 +205,7 @@ class LiveSessionService:
             start_time_str = timing_info.get('start_time')
             if start_time_str:
                 start_time = datetime.fromisoformat(start_time_str)
-                return (datetime.now() - start_time).total_seconds()
+                return (datetime.now(timezone.utc) - start_time).total_seconds()
             return 0.0
         except Exception:
             return 0.0

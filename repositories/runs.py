@@ -19,7 +19,7 @@ Public API:
 """
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from models.participant import Participant
 from utils.path_utils import get_user_runs_dir, get_run_file_path
@@ -69,7 +69,7 @@ def save_run_data(
         'presentation_uuid': presentation_uuid,
         'pin_code': pin_code,
         'expires_at': expires_at.isoformat(),
-        'created_at': created_at if created_at else datetime.now().isoformat(),
+        'created_at': created_at if created_at else datetime.now(timezone.utc).isoformat(),
         'username': username,
         'participants': participants if participants else [],
     }
@@ -252,7 +252,7 @@ def pin_exists(pin_code: str) -> bool:
             if run_data.get('pin_code') == pin_code:
                 try:
                     expires_at = datetime.fromisoformat(run_data.get('expires_at'))
-                    if expires_at > datetime.now():
+                    if expires_at > datetime.now(timezone.utc):
                         return True  # PIN exists and is not expired
                 except (ValueError, TypeError):
                     continue
@@ -275,7 +275,7 @@ def cleanup_expired_runs(username: str) -> None:
     for run in runs:
         try:
             expires_at = datetime.fromisoformat(run.get('expires_at'))
-            if expires_at <= datetime.now():
+            if expires_at <= datetime.now(timezone.utc):
                 # Extract presentation UUID from filename
                 presentation_uuid = run.get('presentation_uuid')
                 if presentation_uuid:
@@ -295,7 +295,7 @@ def get_unexpired_run_by_pin(pin_code):
                 # Check if the run is not expired
                 try:
                     expires_at = datetime.fromisoformat(run_data.get('expires_at'))
-                    if expires_at > datetime.now():
+                    if expires_at > datetime.now(timezone.utc):
                         return run_data
                 except (ValueError, TypeError):
                     # If no expiration or invalid format, return the run

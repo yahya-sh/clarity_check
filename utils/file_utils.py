@@ -7,8 +7,8 @@ for the application's file-based storage system.
 
 import json
 import os
-from typing import Dict, List, Optional, Any
-from datetime import datetime
+from typing import Dict, List, Any
+from datetime import datetime, timezone
 
 from config.constants import JSON_EXTENSION
 
@@ -177,5 +177,5 @@ def get_timestamp_filename(base_name: str, extension: str = JSON_EXTENSION) -> s
     if not extension.startswith('.'):
         extension = '.' + extension
     
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     return f"{base_name}_{timestamp}{extension}"

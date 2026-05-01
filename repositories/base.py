@@ -7,7 +7,7 @@ error handling, file operations, and common patterns.
 
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 from utils.file_utils import (
     read_json_file,
@@ -155,7 +155,7 @@ class BaseRepository(ABC):
         Returns:
             Modified data dictionary with timestamps
         """
-        now = datetime.now().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         
         if created_at:
             data['created_at'] = created_at
@@ -176,7 +176,7 @@ class BaseRepository(ABC):
         Returns:
             Modified data dictionary with updated timestamp
         """
-        data['updated_at'] = datetime.now().isoformat()
+        data['updated_at'] = datetime.now(timezone.utc).isoformat()
         return data
     
     @abstractmethod

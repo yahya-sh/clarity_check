@@ -6,7 +6,7 @@ management, and session status transitions.
 """
 
 from typing import Dict, List, Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 from repositories.sessions import (
     create_session,
@@ -532,8 +532,8 @@ class SessionService:
             first_question = questions_dict.get(current_question_uuid)
             if first_question:
                 time_limit = first_question.get('time_limit', 30)
-                start_time = datetime.now().isoformat()
-                end_time = (datetime.now() + timedelta(seconds=time_limit)).isoformat()
+                start_time = datetime.now(timezone.utc).isoformat()
+                end_time = (datetime.now(timezone.utc) + timedelta(seconds=time_limit)).isoformat()
         
         # Update session data with new properties
         session_data.update({
@@ -577,7 +577,7 @@ class SessionService:
         session_data['status'] = status
         
         # Add timestamp for status change
-        session_data[f'{status}_at'] = datetime.now().isoformat()
+        session_data[f'{status}_at'] = datetime.now(timezone.utc).isoformat()
         
         # Save updated session data
         session_file_path = get_session_file_path(username, presentation_uuid, session_uuid)
@@ -849,7 +849,7 @@ class SessionService:
         
         # Update session status to completed
         session_data['status'] = 'completed'
-        session_data['ended_at'] = datetime.now().isoformat()
+        session_data['ended_at'] = datetime.now(timezone.utc).isoformat()
         
         # Clear current question timing
         session_data['current_question_uuid'] = None

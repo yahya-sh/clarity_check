@@ -1,5 +1,5 @@
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from models.presentation import Presentation
@@ -56,7 +56,7 @@ class PresentationsRepository(UserSpecificRepository):
         Returns:
             Saved presentation instance
         """
-        presentation.updated_at = datetime.now()
+        presentation.updated_at = datetime.now(timezone.utc)
         file_path = get_presentation_file_path(presentation.username, presentation.id)
         self._write_json_file(file_path, presentation.to_dict())
         return presentation
@@ -123,7 +123,7 @@ class PresentationsRepository(UserSpecificRepository):
                     if expires_at:
                         try:
                             expires_at_datetime = datetime.fromisoformat(expires_at)
-                            if expires_at_datetime > datetime.now():
+                            if expires_at_datetime > datetime.now(timezone.utc):
                                 # PIN is valid, load the presentation
                                 presentation_uuid = run_data.get('presentation_uuid')
                                 if presentation_uuid:
