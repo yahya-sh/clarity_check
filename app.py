@@ -12,7 +12,7 @@ from flask import Flask, redirect, flash, session, g, url_for
 from functools import wraps
 import os
 from datetime import timedelta
-from db.init import initialize_db
+from db import initialize_db
 from repositories import users_repo
 from utils.session_utils import (
     validate_instructor_session,
