@@ -25,6 +25,7 @@ from utils.session_utils import (
 from config.constants import SESSION_LIFETIME_HOURS
 
 app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///data/db.sqlite"
 
 # ── Security ──────────────────────────────────────────────────────────────
 # SECRET_KEY must be set before CSRFProtect is initialised so that CSRF
