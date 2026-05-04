@@ -12,7 +12,7 @@ from flask import Flask, redirect, flash, session, g, url_for
 from functools import wraps
 import os
 from datetime import timedelta
-
+from db.init import initialize_db
 from repositories import users_repo
 from utils.session_utils import (
     validate_instructor_session,
@@ -25,7 +25,7 @@ from utils.session_utils import (
 from config.constants import SESSION_LIFETIME_HOURS
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///data/db.sqlite"
+initialize_db(app)
 
 # ── Security ──────────────────────────────────────────────────────────────
 # SECRET_KEY must be set before CSRFProtect is initialised so that CSRF
