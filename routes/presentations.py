@@ -5,7 +5,7 @@ Handles presentation creation, reading, updating, and deletion operations.
 Extracted from instructor.py for better separation of concerns.
 """
 from flask import Blueprint, render_template, flash, redirect, g, url_for, request
-from app import require_instructor
+from auth import require_instructor
 from repositories import presentations_repo
 from repositories.base import NotFoundError, ValidationError
 from services.presentation_service import PresentationService

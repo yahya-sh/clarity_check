@@ -5,7 +5,7 @@ Handles question CRUD operations within presentation objectives.
 Extracted from instructor.py for better separation of concerns.
 """
 from flask import Blueprint, render_template, flash, redirect, g, url_for, request, jsonify
-from app import require_instructor
+from auth import require_instructor
 from forms.question import SaveQuestionForm
 from models.presentation import Presentation
 from services.presentation_service import PresentationService

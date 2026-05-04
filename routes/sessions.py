@@ -7,7 +7,7 @@ Extracted from instructor.py for better separation of concerns.
 """
 from flask import Blueprint, render_template, flash, redirect, g, url_for, request, jsonify
 from flask_wtf.csrf import CSRFError
-from app import require_instructor
+from auth import require_instructor
 from repositories import runs_repo, presentations_repo
 from repositories.base import ValidationError
 from services import qr_service
@@ -16,7 +16,7 @@ from services.qr_service import generate_qr_code
 from services.session_service import SessionService
 from services.live_session_service import LiveSessionService
 from utils.response_utils import ResponseUtils
-from config.constants import FLASH_SUCCESS, FLASH_ERROR, SESSION_PENDING, SESSION_ACTIVE, SESSION_DONE
+from config.constants import FLASH_SUCCESS, FLASH_ERROR, FLASH_WARNING, SESSION_PENDING, SESSION_ACTIVE, SESSION_DONE
 from models.presentation import Presentation
 from routes._helpers import _load_presentation_or_abort
 

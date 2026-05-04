@@ -5,7 +5,7 @@ Handles objective CRUD operations within presentations.
 Extracted from instructor.py for better separation of concerns.
 """
 from flask import Blueprint, render_template, flash, redirect, g, url_for, request, jsonify
-from app import require_instructor
+from auth import require_instructor
 from services.presentation_service import PresentationService
 from repositories import presentations_repo
 from repositories.base import NotFoundError, ValidationError

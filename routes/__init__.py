@@ -13,7 +13,6 @@ This package contains all Flask route modules organized by functionality:
 - api: JSON API endpoints for both participants and instructors
 """
 
-from .auth import routes as auth_routes
 from .public import routes as public_routes
 from .dashboard import routes as dashboard_routes
 from .presentations import routes as presentations_routes

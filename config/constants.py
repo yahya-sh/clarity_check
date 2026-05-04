@@ -6,8 +6,6 @@ used throughout the application to improve maintainability and reduce
 hardcoded values.
 """
 
-# Session configuration
-SESSION_LIFETIME_HOURS = 8
 PARTICIPANT_SESSION_KEYS = {
     'participant_uuid',
     'participant_session_uuid', 

@@ -1,21 +1,54 @@
-"""
-routes/auth.py — Authentication routes.
+from flask import Blueprint, flash, g, redirect, render_template, session, url_for
 
-Handles instructor login, logout, and registration.  No
-:func:`~app.require_instructor` decorator is needed here because these
-routes are intentionally public.
-"""
-from forms.register import RegisterForm
+from config.constants import FLASH_ERROR, FLASH_SUCCESS
 from forms.login import LoginForm
-from flask import Blueprint, render_template, redirect, flash, session, url_for
+from forms.register import RegisterForm
 from services.auth_service import AuthService
 from utils.form_utils import FormUtils
-from config.constants import FLASH_SUCCESS, FLASH_ERROR
+from utils.session_utils import populate_participant_in_context, populate_user_in_context
+
+################################################
+############## Routes Setup ####################
+################################################
+
+router = Blueprint('auth', __name__)
+
+@router.app_context_processor
+def inject_current_user():
+    """Make ``current_user`` available in all Jinja2 templates."""
+    return {'current_user': getattr(g, 'user', None)}
 
 
-routes = Blueprint('auth', __name__)
+@router.before_app_request
+def add_auth_participant_to_context():
+    """
+    Populate ``g.participant`` before every request.
 
-@routes.route('/login', methods=['GET', 'POST'])
+    Reads participant identity from the Flask session and constructs a
+    :class:`~models.participant.Participant` instance so that downstream
+    route handlers and decorators can reference ``g.participant`` directly.
+    Set to ``None`` when no participant session is active.
+    """
+    populate_participant_in_context()
+
+
+@router.before_app_request
+def add_auth_user_to_context():
+    """
+    Populate ``g.user`` before every request.
+
+    Looks up the instructor user from the file store using the username
+    stored in the Flask session.  Set to ``None`` when not logged in.
+    """
+    populate_user_in_context()
+
+
+
+################################################
+############## Routes Start ####################
+################################################
+
+@router.route('/login', methods=['GET', 'POST'])
 def login():
     """
     Render the login form (GET) or authenticate an instructor (POST).
@@ -39,7 +72,7 @@ def login():
     
     return render_template('instructor/login.html', form=form)
 
-@routes.route('/register', methods=['GET', 'POST'])
+@router.route('/register', methods=['GET', 'POST'])
 def register():
     """
     Render the registration form (GET) or create a new instructor (POST).
@@ -63,9 +96,10 @@ def register():
     return render_template('instructor/register.html', form=form)
 
 
-@routes.route('/logout')
+@router.route('/logout')
 def logout():
     """Clear the instructor session and redirect to the login page."""
     session.clear()
     flash("You have been logged out", FLASH_SUCCESS)
     return redirect('/login')
+

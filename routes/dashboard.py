@@ -5,7 +5,7 @@ Handles instructor dashboard and overview pages, including
 presentation listings and navigation.
 """
 from flask import Blueprint, render_template, g
-from app import require_instructor
+from auth import require_instructor
 from repositories import presentations_repo
 
 routes = Blueprint('dashboard', __name__)

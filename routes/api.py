@@ -6,7 +6,7 @@ providing a clear boundary for API functionality and future
 API versioning support.
 """
 from flask import Blueprint, g, jsonify, request
-from app import require_participant, require_instructor
+from auth import require_participant, require_instructor
 from services.pin_service_extended import PinServiceExtended
 from services.participant_service import ParticipantService
 from services.live_session_service import LiveSessionService

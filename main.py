@@ -1,6 +1,6 @@
 from app import app
+from auth import router as auth_routes
 from routes import (
-    auth_routes,
     public_routes,
     dashboard_routes,
     presentations_routes,

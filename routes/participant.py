@@ -7,7 +7,7 @@ separation of concerns.
 """
 from flask import Blueprint, render_template, flash, redirect, url_for, request, session, g
 from forms.join import JoinForm
-from app import require_participant
+from auth import require_participant
 from services.pin_service_extended import PinServiceExtended
 from services.participant_service import ParticipantService
 from services.live_session_service import LiveSessionService
